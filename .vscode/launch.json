@@ -24,7 +24,7 @@
       "type": "chrome",
       "name": "vben admin ele dev",
       "request": "launch",
-      "url": "http://localhost:5777",
+      "url": "http://localhost:8089",
       "env": { "NODE_ENV": "development" },
       "sourceMaps": true,
       "webRoot": "${workspaceFolder}/apps/web-ele"

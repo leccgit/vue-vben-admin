@@ -77,7 +77,7 @@ const coreRoutes: RouteRecordRaw[] = [
         name: 'ForgetPassword',
         path: 'forget-password',
         component: () =>
-          import('#/views/_core/authentication/forget-password.vue'),
+          import('#/views/_core/authentication/forgot-password.vue'),
         meta: {
           title: $t('page.auth.forgetPassword'),
         },
