@@ -196,9 +196,17 @@ export const useAuthStore = defineStore('auth', () => {
         }
 
         // 导航到目标页面
-        await (onSuccess
-          ? onSuccess()
-          : router.push(preferences.app.defaultHomePath));
+        try {
+          await (onSuccess
+            ? onSuccess()
+            : router.push(preferences.app.defaultHomePath));
+        } catch (navigationError) {
+          // 导航错误不应该影响登录成功状态
+          console.error(
+            'Navigation error after successful login:',
+            navigationError,
+          );
+        }
 
         // 显示登录成功通知
         ElNotification({

@@ -4,6 +4,13 @@
   "pageDesc": "Efficient, versatile frontend template",
   "loginSuccess": "Login Successful",
   "loginSuccessDesc": "Welcome Back",
+  "loginError": "Login Error",
+  "loginFailed": "Login Failed",
+  "identifier": "User Identifier",
+  "identifierTip": "Please enter username, email or phone number",
+  "security": {
+    "warning": "Security Warning"
+  },
   "loginSubtitle": "Enter your account details to manage your projects",
   "selectAccount": "Quick Select Account",
   "username": "Username",
