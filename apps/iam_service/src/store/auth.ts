@@ -124,7 +124,7 @@ export const useAuthStore = defineStore('auth', () => {
           session_id,
           user_info,
           tenant_info,
-          security_warnings,
+          security_warnings = [], // 默认为空数组
         } = response.data;
 
         // 存储令牌信息
@@ -140,12 +140,39 @@ export const useAuthStore = defineStore('auth', () => {
         // 存储用户和租户信息
         userInfo.value = user_info;
         tenantInfo.value = tenant_info;
+
+        // 收集设备信息
+        let deviceInfo;
+        try {
+          deviceInfo = await import('#/utils/device').then((m) =>
+            m.collectDeviceInfo(),
+          );
+        } catch (error) {
+          console.warn('Failed to collect device info:', error);
+          // 使用基本的设备信息作为后备
+          deviceInfo = {
+            device_id: 'unknown',
+            device_name: 'Unknown Device',
+            os: 'Unknown',
+            app_version: '1.0.0',
+            ip_address: 'unknown',
+            user_agent: navigator.userAgent,
+            browser: 'Unknown',
+            browser_version: 'Unknown',
+            is_mobile: false,
+            screen_resolution: `${screen.width}x${screen.height}`,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            language: navigator.language,
+            fingerprint: 'unknown',
+            network_info: { connection_type: 'unknown', downlink: 0, rtt: 0 },
+            is_trusted: false,
+          };
+        }
+
         sessionInfo.value = {
           session_id,
           user_id: user_info.user_id,
-          device_info: await import('#/utils/device').then((m) =>
-            m.collectDeviceInfo(),
-          ),
+          device_info: deviceInfo,
           created_at: new Date().toISOString(),
           last_activity_at: new Date().toISOString(),
           expires_at: new Date(Date.now() + expires_in * 1000).toISOString(),
@@ -172,6 +199,9 @@ export const useAuthStore = defineStore('auth', () => {
           previousLoginTime: user_info.last_login_at,
         });
 
+        // 合并所有安全警告
+        const allWarnings = [...security_warnings];
+
         if (suspiciousWarnings.length > 0) {
           const additionalWarnings = suspiciousWarnings.map((warning) => ({
             type: 'suspicious_location' as const,
@@ -179,12 +209,12 @@ export const useAuthStore = defineStore('auth', () => {
             level: 'warning' as const,
             action_required: false,
           }));
-          security_warnings.push(...additionalWarnings);
+          allWarnings.push(...additionalWarnings);
         }
 
         // 处理安全警告
-        if (security_warnings && security_warnings.length > 0) {
-          handleSecurityWarnings(security_warnings);
+        if (allWarnings.length > 0) {
+          handleSecurityWarnings(allWarnings);
         }
 
         // 记录成功登录
