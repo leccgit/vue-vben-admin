@@ -1,4 +1,3 @@
-import { baseRequestClient, requestClient } from '#/api/request';
 import type {
   // DeviceInfo,
   LoginRequestData,
@@ -7,6 +6,8 @@ import type {
   // TenantBasicInfo,
   // UserBasicInfo
 } from '#/types';
+
+import { baseRequestClient, requestClient } from '#/api/request';
 
 export namespace AuthApi {
   /** 登录接口参数 - 向后兼容的简单格式 */
@@ -27,7 +28,7 @@ export namespace AuthApi {
   }
 
   /** 登录接口返回值 - 新的多租户格式 */
-export interface MultiTenantLoginResult {
+  export interface MultiTenantLoginResult {
     status: string;
     code: number;
     data: LoginResponseData;
@@ -52,25 +53,37 @@ export async function loginApi(data: AuthApi.LoginParams) {
 /**
  * 登录 - 新的多租户接口
  */
-export async function multiTenantLoginApi(data: AuthApi.MultiTenantLoginParams) {
-  return requestClient.post<AuthApi.MultiTenantLoginResult>('/auth/login', data);
+export async function multiTenantLoginApi(
+  data: AuthApi.MultiTenantLoginParams,
+) {
+  return requestClient.post<AuthApi.MultiTenantLoginResult>(
+    '/auth/login',
+    data,
+  );
 }
 
 /**
  * 统一登录接口 - 自动适配格式
-*/
+ */
 export async function unifiedLoginApi(params: {
-  username: string;
+  mfaCode?: string;
   password: string;
   rememberMe?: boolean;
-  mfaCode?: string;
   useMultiTenant?: boolean;
+  username: string;
 }) {
-const { username, password, rememberMe, mfaCode, useMultiTenant = false } = params;
+  const {
+    username,
+    password,
+    rememberMe,
+    mfaCode,
+    useMultiTenant = false,
+  } = params;
 
   if (useMultiTenant) {
     // 动态导入设备信息工具
-    const { collectDeviceInfo, generateRequestMeta, detectLoginType } = await import('#/utils/device');
+    const { collectDeviceInfo, generateRequestMeta, detectLoginType } =
+      await import('#/utils/device');
 
     const multiTenantParams: AuthApi.MultiTenantLoginParams = {
       meta: generateRequestMeta(),
@@ -80,8 +93,8 @@ const { username, password, rememberMe, mfaCode, useMultiTenant = false } = para
         credential: password,
         remember_me: rememberMe,
         mfa_code: mfaCode,
-        device_info: await collectDeviceInfo()
-      }
+        device_info: await collectDeviceInfo(),
+      },
     };
 
     return multiTenantLoginApi(multiTenantParams);

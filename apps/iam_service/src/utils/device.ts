@@ -30,13 +30,13 @@ export function getDeviceId(): string {
 export function getDeviceName(): string {
   // 根据用户代理字符串推断设备名称
   const ua = navigator.userAgent;
-  
+
   if (ua.includes('iPhone')) return 'iPhone';
   if (ua.includes('iPad')) return 'iPad';
   if (ua.includes('Android')) return 'Android Device';
   if (ua.includes('Windows')) return 'Windows PC';
   if (ua.includes('Mac')) return 'Mac';
-  
+
   return 'Web Browser';
 }
 
@@ -46,13 +46,13 @@ export function getDeviceName(): string {
 export function getOS(): string {
   const platform = navigator.platform;
   const userAgent = navigator.userAgent;
-  
+
   if (userAgent.includes('Windows')) return 'Windows';
   if (userAgent.includes('Mac')) return 'macOS';
   if (userAgent.includes('Linux')) return 'Linux';
   if (userAgent.includes('Android')) return 'Android';
   if (userAgent.includes('iOS')) return 'iOS';
-  
+
   return platform;
 }
 
@@ -87,7 +87,7 @@ export async function collectDeviceInfo(): Promise<DeviceInfo> {
     os: getOS(),
     app_version: getAppVersion(),
     ip_address: await getClientIP(),
-    user_agent: navigator.userAgent
+    user_agent: navigator.userAgent,
   };
 }
 
@@ -98,26 +98,28 @@ export function generateRequestMeta(): RequestMeta {
   return {
     request_id: generateRequestId(),
     timestamp: new Date().toISOString(),
-    version: 'v1'
+    version: 'v1',
   };
 }
 
 /**
  * 检测登录类型
  */
-export function detectLoginType(identifier: string): 'email' | 'phone' | 'username' {
+export function detectLoginType(
+  identifier: string,
+): 'email' | 'phone' | 'username' {
   // 邮箱格式检测
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const emailRegex = /^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/;
   if (emailRegex.test(identifier)) {
     return 'email';
   }
-  
+
   // 手机号格式检测（简单的中国手机号格式）
   const phoneRegex = /^1[3-9]\d{9}$/;
   if (phoneRegex.test(identifier)) {
     return 'phone';
   }
-  
+
   // 默认为用户名
   return 'username';
 }

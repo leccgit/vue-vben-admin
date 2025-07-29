@@ -3,9 +3,37 @@ import { acceptHMRUpdate, defineStore } from 'pinia';
 interface BasicUserInfo {
   [key: string]: any;
   /**
+   * 账户状态
+   */
+  accountStatus?: 'active' | 'disabled' | 'locked';
+  /**
    * 头像
    */
   avatar: string;
+  /**
+   * 用户邮箱
+   */
+  email?: string;
+  /**
+   * 最后登录时间
+   */
+  lastLoginTime?: string;
+  /**
+   * 多因素认证是否启用
+   */
+  mfaEnabled?: boolean;
+  /**
+   * 密码过期时间（秒）
+   */
+  passwordExpiresIn?: number;
+  /**
+   * 用户权限码列表
+   */
+  permissions?: string[];
+  /**
+   * 用户手机号
+   */
+  phone?: string;
   /**
    * 用户昵称
    */
@@ -22,37 +50,17 @@ interface BasicUserInfo {
    * 用户名
    */
   username: string;
-  /**
-   * 用户邮箱
-   */
-  email?: string;
-  /**
-   * 用户手机号
-   */
-  phone?: string;
-  /**
-   * 多因素认证是否启用
-   */
-  mfaEnabled?: boolean;
-  /**
-   * 密码过期时间（秒）
-   */
-  passwordExpiresIn?: number;
-  /**
-   * 用户权限码列表
-   */
-  permissions?: string[];
-  /**
-   * 最后登录时间
-   */
-  lastLoginTime?: string;
-  /**
-   * 账户状态
-   */
-  accountStatus?: 'active' | 'locked' | 'disabled';
 }
 
 interface TenantInfo {
+  /**
+   * 租户配置
+   */
+  config?: Record<string, any>;
+  /**
+   * 租户状态
+   */
+  status?: 'active' | 'inactive' | 'suspended';
   /**
    * 租户ID
    */
@@ -61,17 +69,13 @@ interface TenantInfo {
    * 租户名称
    */
   tenant_name: string;
-  /**
-   * 租户状态
-   */
-  status?: 'active' | 'inactive' | 'suspended';
-  /**
-   * 租户配置
-   */
-  config?: Record<string, any>;
 }
 
 interface AccessState {
+  /**
+   * 租户信息
+   */
+  tenantInfo: null | TenantInfo;
   /**
    * 用户信息
    */
@@ -80,10 +84,6 @@ interface AccessState {
    * 用户角色
    */
   userRoles: string[];
-  /**
-   * 租户信息
-   */
-  tenantInfo: TenantInfo | null;
 }
 
 /**
@@ -101,7 +101,7 @@ export const useUserStore = defineStore('core-user', {
     setUserRoles(roles: string[]) {
       this.userRoles = roles;
     },
-    setTenantInfo(tenantInfo: TenantInfo | null) {
+    setTenantInfo(tenantInfo: null | TenantInfo) {
       this.tenantInfo = tenantInfo;
     },
     getTenantInfo() {

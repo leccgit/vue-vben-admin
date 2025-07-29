@@ -66,18 +66,18 @@ export interface LoginResponseData {
 }
 
 /** 安全警告类型 */
-export type SecurityWarningType = 
-  | 'password_expiring'
-  | 'new_device_login'
-  | 'suspicious_location'
-  | 'multiple_failed_attempts'
+export type SecurityWarningType =
   | 'account_locked'
-  | 'mfa_required';
+  | 'mfa_required'
+  | 'multiple_failed_attempts'
+  | 'new_device_login'
+  | 'password_expiring'
+  | 'suspicious_location';
 
 /** 安全警告接口 */
 export interface SecurityWarning {
   type: SecurityWarningType;
   message: string;
-  level: 'info' | 'warning' | 'error';
+  level: 'error' | 'info' | 'warning';
   action_required?: boolean;
 }

@@ -74,7 +74,7 @@ interface UserInfo extends BasicUserInfo {
   /**
    * 账户状态
    */
-  accountStatus?: 'active' | 'locked' | 'disabled';
+  accountStatus?: 'active' | 'disabled' | 'locked';
 }
 
 export type { TenantInfo, UserInfo };
