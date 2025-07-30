@@ -18,7 +18,7 @@ import ThirdPartyLogin from './third-party-login.vue';
 
 interface Props extends AuthenticationProps {
   formSchema?: VbenFormSchema[];
- }
+}
 
 defineOptions({
   name: 'AuthenticationLogin',
@@ -75,7 +75,6 @@ async function handleSubmit() {
     emit('submit', values);
   }
 }
-
 
 function handleGo(path: string) {
   router.push(path);
