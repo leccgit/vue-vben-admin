@@ -18,7 +18,7 @@ import ThirdPartyLogin from './third-party-login.vue';
 
 interface Props extends AuthenticationProps {
   formSchema?: VbenFormSchema[];
-}
+ }
 
 defineOptions({
   name: 'AuthenticationLogin',
@@ -72,14 +72,10 @@ async function handleSubmit() {
       REMEMBER_ME_KEY,
       rememberMe.value ? values?.username : '',
     );
-    try {
-      await emit('submit', values);
-    } catch {
-      // 错误已经在父组件中处理，这里只是防止未捕获的Promise错误
-      console.error('Login submission error handled by parent component');
-    }
+    emit('submit', values);
   }
 }
+
 
 function handleGo(path: string) {
   router.push(path);

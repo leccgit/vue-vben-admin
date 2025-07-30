@@ -114,7 +114,7 @@ export const useAuthStore = defineStore('auth', () => {
         identifier: cleanIdentifier,
       });
 
-      if (response.code === 200 && response.data) {
+      if (response.status === "success" && response.data) {
         const {
           access_token,
           refresh_token,
@@ -348,7 +348,7 @@ export const useAuthStore = defineStore('auth', () => {
     } catch (error: any) {
       console.error('Token refresh error:', error);
       // 刷新失败，强制登出
-      await logout(false);
+      await logout("all");
       throw error;
     }
   }
