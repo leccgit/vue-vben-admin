@@ -43,6 +43,7 @@
     "@vueuse/core": "catalog:",
     "dayjs": "catalog:",
     "element-plus": "catalog:",
+    "jose": "^6.0.12",
     "pinia": "catalog:",
     "vue": "catalog:",
     "vue-router": "catalog:"

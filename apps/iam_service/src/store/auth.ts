@@ -21,12 +21,14 @@ import {
   getAccessCodesApi,
   unifiedChangePasswordApi,
   unifiedForgotPasswordApi,
+  unifiedGetUserInfoApi,
   unifiedLoginApi,
   unifiedLogoutApi,
   unifiedRefreshTokenApi,
   unifiedResetPasswordApi,
 } from '#/api';
 import { $t } from '#/locales';
+import { parseJwtToken } from '#/utils/jwt';
 import {
   checkPasswordStrength,
   checkRateLimit,
@@ -589,13 +591,37 @@ export const useAuthStore = defineStore('auth', () => {
         return convertedUserInfo;
       }
 
-      // 如果没有本地用户信息，说明可能是页面刷新后的情况
-      // 这种情况下，我们需要重新获取用户信息
-      // 但是我们需要用户ID和租户ID，这些信息通常在JWT token中
+      // 如果没有本地用户信息，从JWT令牌中解析用户信息
+      try {
+        // 解析JWT令牌
+        const tokenPayload = await parseJwtToken(accessStore.accessToken);
+        const userId = tokenPayload.user_id;
+        const tenantId = tokenPayload.tenant_id || ''; // 租户ID可能不存在
 
-      // 临时解决方案：如果没有用户信息，抛出错误要求重新登录
-      // 在实际应用中，你可能需要从JWT token中解析用户信息
-      throw new Error('User information not available. Please login again.');
+        // 使用解析得到的用户ID和租户ID获取用户信息
+        const response = await unifiedGetUserInfoApi({
+          tenantId,
+          userId,
+          includePermissions: true,
+          includeSessions: false,
+        });
+
+        // 更新本地用户信息
+        userInfo.value = response.data;
+
+        // 转换为 BasicUserInfo 格式
+        const convertedUserInfo = convertToBasicUserInfo(response.data);
+
+        // 设置到 userStore
+        userStore.setUserInfo(convertedUserInfo);
+
+        return convertedUserInfo;
+      } catch (error) {
+        console.error('Failed to parse JWT token or fetch user info:', error);
+        throw new Error(
+          'Failed to retrieve user information. Please login again.',
+        );
+      }
 
       // 注释掉的代码：如果你有办法从其他地方获取用户ID和租户ID
       /*
