@@ -12,7 +12,7 @@ import { useRouter } from 'vue-router';
 
 import { LOGIN_PATH } from '@vben/constants';
 import { preferences } from '@vben/preferences';
-import { resetAllStores, useAccessStore } from '@vben/stores';
+import { resetAllStores, useAccessStore, useUserStore } from '@vben/stores';
 
 import { ElNotification } from 'element-plus';
 import { defineStore } from 'pinia';
@@ -113,7 +113,6 @@ export const useAuthStore = defineStore('auth', () => {
         ...params,
         identifier: cleanIdentifier,
       });
-
       if (response.status === 'success' && response.data) {
         const {
           access_token,
@@ -187,7 +186,7 @@ export const useAuthStore = defineStore('auth', () => {
           const accessCodes = await getAccessCodesApi();
           accessStore.setAccessCodes(accessCodes);
         } catch (error) {
-          console.warn('Failed to fetch access codes:', error);
+          console.error('Failed to fetch access codes:', error);
           accessStore.setAccessCodes([]);
         }
 
@@ -247,11 +246,27 @@ export const useAuthStore = defineStore('auth', () => {
 
         return { userInfo: user_info, tenantInfo: tenant_info };
       } else {
-        throw new Error(response.message || 'Login failed');
+        const errMsg = response?.message || 'Login failed';
+        console.error(
+          'Unexpected login response:',
+          JSON.stringify(response, null, 2),
+        );
+        throw new Error(errMsg);
       }
     } catch (error: any) {
-      console.error('Login error:', error);
+      console.error('Login error:', error); // 常规输出（浏览器控制台友好）
 
+      if (error instanceof Error) {
+        console.error('Error name:', error.name);
+        console.error('Error name:', error.name);
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+      } else {
+        console.error(
+          'Non-standard error object:',
+          JSON.stringify(error, null, 2),
+        );
+      }
       // 记录失败尝试
       recordFailureAttempt('login', cleanIdentifier);
 
@@ -553,6 +568,94 @@ export const useAuthStore = defineStore('auth', () => {
     return true;
   }
 
+  /**
+   * 获取用户信息
+   * 用于路由守卫中获取用户信息并设置到 userStore
+   */
+  async function fetchUserInfo() {
+    const userStore = useUserStore();
+    const accessStore = useAccessStore();
+
+    try {
+      // 检查是否有访问令牌
+      if (!accessStore.accessToken) {
+        throw new Error('No access token available. Please login first.');
+      }
+
+      // 如果本地已有用户信息，先转换并返回
+      if (userInfo.value) {
+        const convertedUserInfo = convertToBasicUserInfo(userInfo.value);
+        userStore.setUserInfo(convertedUserInfo);
+        return convertedUserInfo;
+      }
+
+      // 如果没有本地用户信息，说明可能是页面刷新后的情况
+      // 这种情况下，我们需要重新获取用户信息
+      // 但是我们需要用户ID和租户ID，这些信息通常在JWT token中
+
+      // 临时解决方案：如果没有用户信息，抛出错误要求重新登录
+      // 在实际应用中，你可能需要从JWT token中解析用户信息
+      throw new Error('User information not available. Please login again.');
+
+      // 注释掉的代码：如果你有办法从其他地方获取用户ID和租户ID
+      /*
+      const tenantId = 'your-tenant-id'; // 从某处获取
+      const userId = 'your-user-id';     // 从某处获取
+
+      // 从服务器获取完整的用户信息
+      const response = await unifiedGetUserInfoApi({
+        tenantId,
+        userId,
+        includePermissions: true,
+        includeSessions: false,
+      });
+
+      // 更新本地用户信息
+      userInfo.value = response.data;
+
+      // 转换为 BasicUserInfo 格式
+      const convertedUserInfo = convertToBasicUserInfo(response.data);
+
+      // 设置到 userStore
+      userStore.setUserInfo(convertedUserInfo);
+
+      return convertedUserInfo;
+      */
+    } catch (error) {
+      console.error('Failed to fetch user info:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 获取账户状态
+   */
+  function getAccountStatus(status: string): string {
+    if (status === 'active') return 'active';
+    if (status === 'locked') return 'locked';
+    return 'disabled';
+  }
+
+  /**
+   * 将 UserBasicInfo 转换为 BasicUserInfo 格式
+   */
+  function convertToBasicUserInfo(user: UserBasicInfo): any {
+    return {
+      userId: user.user_id,
+      username: user.username,
+      realName: user.nickname,
+      avatar: user.avatar || '',
+      roles: user.roles,
+      email: user.email,
+      phone: user.phone,
+      permissions: user.permissions,
+      mfaEnabled: user.mfa_enabled,
+      passwordExpiresIn: user.password_expires_in,
+      lastLoginTime: user.last_login_at,
+      accountStatus: getAccountStatus(user.status),
+    };
+  }
+
   function $reset() {
     loginLoading.value = false;
     logoutLoading.value = false;
@@ -586,6 +689,7 @@ export const useAuthStore = defineStore('auth', () => {
     changePassword,
     forgotPassword,
     resetPassword,
+    fetchUserInfo,
     clearAuthState,
     checkAuthStatus,
     handleSecurityWarnings,

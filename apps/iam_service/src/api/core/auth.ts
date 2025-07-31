@@ -3,6 +3,7 @@ import type {
   LoginRequestData,
   LoginResponseData,
   RequestMeta,
+  SuccessResponse,
 } from '#/types';
 
 import { baseRequestClient, requestClient } from '#/api/request';
@@ -15,14 +16,7 @@ export namespace AuthApi {
   }
 
   /** 登录接口返回值 */
-  export interface LoginResult {
-    status: string;
-    code: number;
-    data: LoginResponseData;
-    message: string;
-    timestamp: string;
-    request_id: string;
-  }
+  export type LoginResult = SuccessResponse<LoginResponseData>;
 
   /** 登出接口参数 */
   export interface LogoutParams {
@@ -34,18 +28,11 @@ export namespace AuthApi {
   }
 
   /** 登出接口返回值 */
-  export interface LogoutResult {
-    status: string;
-    code: number;
-    data: {
-      logout_time: string;
-      remaining_sessions: number;
-      terminated_sessions: number;
-    };
-    message: string;
-    timestamp: string;
-    request_id: string;
-  }
+  export type LogoutResult = SuccessResponse<{
+    logout_time: string;
+    remaining_sessions: number;
+    terminated_sessions: number;
+  }>;
 
   /** 刷新令牌接口参数 */
   export interface RefreshTokenParams {
@@ -57,21 +44,14 @@ export namespace AuthApi {
   }
 
   /** 刷新令牌接口返回值 */
-  export interface RefreshTokenResult {
-    status: string;
-    code: number;
-    data: {
-      access_token: string;
-      expires_in: number;
-      issued_at: string;
-      refresh_expires_in: number;
-      refresh_token: string;
-      token_type: string;
-    };
-    message: string;
-    timestamp: string;
-    request_id: string;
-  }
+  export type RefreshTokenResult = SuccessResponse<{
+    access_token: string;
+    expires_in: number;
+    issued_at: string;
+    refresh_expires_in: number;
+    refresh_token: string;
+    token_type: string;
+  }>;
 
   /** 修改密码接口参数 */
   export interface ChangePasswordParams {
@@ -84,18 +64,11 @@ export namespace AuthApi {
   }
 
   /** 修改密码接口返回值 */
-  export interface ChangePasswordResult {
-    status: string;
-    code: number;
-    data: {
-      changed_at: string;
-      password_expires_at?: string;
-      terminated_sessions: number;
-    };
-    message: string;
-    timestamp: string;
-    request_id: string;
-  }
+  export type ChangePasswordResult = SuccessResponse<{
+    changed_at: string;
+    password_expires_at?: string;
+    terminated_sessions: number;
+  }>;
 
   /** 忘记密码接口参数 */
   export interface ForgotPasswordParams {
@@ -108,18 +81,11 @@ export namespace AuthApi {
   }
 
   /** 忘记密码接口返回值 */
-  export interface ForgotPasswordResult {
-    status: string;
-    code: number;
-    data: {
-      expires_at: string;
-      reset_token_id: string;
-      sent_to: string; // 脱敏显示
-    };
-    message: string;
-    timestamp: string;
-    request_id: string;
-  }
+  export type ForgotPasswordResult = SuccessResponse<{
+    expires_at: string;
+    reset_token_id: string;
+    sent_to: string; // 脱敏显示
+  }>;
 
   /** 重置密码接口参数 */
   export interface ResetPasswordParams {
@@ -131,24 +97,19 @@ export namespace AuthApi {
   }
 
   /** 重置密码接口返回值 */
-  export interface ResetPasswordResult {
-    status: string;
-    code: number;
-    data: {
-      all_sessions_terminated: boolean;
-      reset_at: string;
-    };
-    message: string;
-    timestamp: string;
-    request_id: string;
-  }
+  export type ResetPasswordResult = SuccessResponse<{
+    all_sessions_terminated: boolean;
+    reset_at: string;
+  }>;
 }
 
 /**
  * 用户登录
  */
 export async function loginApi(params: AuthApi.LoginParams) {
-  return requestClient.post<AuthApi.LoginResult>('/v1/auth/login', params);
+  return requestClient.post<AuthApi.LoginResult>('/v1/auth/login', params, {
+    responseReturn: 'body',
+  });
 }
 
 /**
@@ -177,8 +138,7 @@ export async function unifiedLoginApi(params: {
       device_info: await collectDeviceInfo(),
     },
   };
-
-  return loginApi(loginParams);
+  return await loginApi(loginParams);
 }
 
 /**

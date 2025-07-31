@@ -2,6 +2,49 @@
  * 认证相关的类型定义
  */
 
+/** 响应状态枚举 */
+export type ResponseStatus = 'error' | 'fail' | 'success';
+
+/** 错误详情接口 */
+export interface ErrorDetail {
+  type: string;
+  message: string;
+}
+
+/** 通用响应基类 */
+export interface BaseResponse<T = any> {
+  status: ResponseStatus;
+  code: number;
+  data?: T;
+  message: string;
+  timestamp: string;
+  request_id?: string;
+  errors?: ErrorDetail[];
+}
+
+/** 成功响应接口 */
+export interface SuccessResponse<T = any> extends BaseResponse<T> {
+  status: 'success';
+  code: 200;
+  data: T;
+}
+
+/** 失败响应接口 */
+export interface FailResponse extends BaseResponse<null> {
+  status: 'fail';
+  code: number; // 4xx
+  data: null;
+  errors?: ErrorDetail[];
+}
+
+/** 错误响应接口 */
+export interface ErrorResponse extends BaseResponse<null> {
+  status: 'error';
+  code: number; // 5xx
+  data: null;
+  errors?: ErrorDetail[];
+}
+
 /** 登录类型枚举 */
 export type LoginType = 'email' | 'phone' | 'username';
 
