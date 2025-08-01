@@ -191,8 +191,8 @@ export const useAuthStore = defineStore('auth', () => {
 
         // 获取权限码
         try {
-          const accessCodes = await getAccessCodesApi();
-          accessStore.setAccessCodes(accessCodes);
+          const accessCodesResponse = await getAccessCodesApi();
+          accessStore.setAccessCodes(accessCodesResponse.data);
         } catch (error) {
           console.error('Failed to fetch access codes:', error);
           accessStore.setAccessCodes([]);
@@ -294,13 +294,35 @@ export const useAuthStore = defineStore('auth', () => {
    * 用户登出
    */
   async function logout(
-    logoutType: 'all' | 'current' = 'current',
+    logoutAllDevices: boolean = false,
     redirect: boolean = true,
+    sessionId?: string,
+    tenantId?: string,
   ) {
     try {
       logoutLoading.value = true;
 
-      await unifiedLogoutApi(logoutType);
+      // 确保传递必要的参数
+      const effectiveTenantId = tenantId || tenantInfo.value?.tenant_id;
+      const effectiveSessionId = sessionId || sessionInfo.value?.session_id;
+
+      if (!effectiveTenantId) {
+        throw new Error(
+          'Tenant ID is required for logout. Please ensure you are logged in properly.',
+        );
+      }
+
+      if (!effectiveSessionId) {
+        throw new Error(
+          'Session ID is required for logout. Please ensure you are logged in properly.',
+        );
+      }
+
+      await unifiedLogoutApi({
+        logoutAllDevices,
+        sessionId: effectiveSessionId,
+        tenantId: effectiveTenantId,
+      });
 
       ElNotification({
         message: $t('authentication.logoutSuccess'),
@@ -371,7 +393,12 @@ export const useAuthStore = defineStore('auth', () => {
     } catch (error: any) {
       console.error('Token refresh error:', error);
       // 刷新失败，强制登出
-      await logout('all');
+      await logout(
+        true,
+        true,
+        sessionInfo.value?.session_id,
+        tenantInfo.value?.tenant_id,
+      );
       throw error;
     }
   }
@@ -604,6 +631,41 @@ export const useAuthStore = defineStore('auth', () => {
         const userId = tokenPayload.user_id;
         const tenantId = tokenPayload.tenant_id || ''; // 租户ID可能不存在
 
+        // 设置租户信息和会话信息到本地状态
+        tenantInfo.value = {
+          tenant_id: tenantId,
+          tenant_name: 'Development Tenant', // 开发环境默认值
+          tenant_code: 'DEV',
+          status: 'active',
+          max_users: 100,
+          current_users: 1,
+          created_at: new Date().toISOString(),
+        };
+
+        sessionInfo.value = {
+          session_id: tokenPayload.session_id,
+          user_id: userId,
+          device_info: {
+            device_id: tokenPayload.device_fingerprint || 'dev-device',
+            device_name: 'Development Device',
+            os: 'Unknown',
+            app_version: '1.0.0',
+            ip_address: tokenPayload.ip_address || '127.0.0.1',
+            user_agent: navigator.userAgent || 'Unknown',
+            browser: 'Unknown',
+            browser_version: 'Unknown',
+            screen_resolution: 'Unknown',
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            language: navigator.language || 'en',
+            is_mobile: false,
+            is_trusted: true,
+          },
+          created_at: new Date(tokenPayload.iat * 1000).toISOString(),
+          last_activity_at: new Date().toISOString(),
+          expires_at: new Date(tokenPayload.exp * 1000).toISOString(),
+          is_current: true,
+        };
+
         // 使用解析得到的用户ID和租户ID获取用户信息
         const response = await unifiedGetUserInfoApi({
           tenantId,
@@ -618,6 +680,12 @@ export const useAuthStore = defineStore('auth', () => {
 
         // 设置到 userStore
         userStore.setUserInfo(convertedUserInfo);
+
+        console.warn('✅ User info fetched and tenant/session info set:', {
+          tenantId,
+          sessionId: tokenPayload.session_id,
+          userId,
+        });
 
         return convertedUserInfo;
       } catch (error) {

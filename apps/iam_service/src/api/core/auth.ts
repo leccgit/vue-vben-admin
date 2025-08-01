@@ -22,8 +22,9 @@ export namespace AuthApi {
   export interface LogoutParams {
     meta: RequestMeta;
     data: {
-      logout_type: 'all' | 'current';
-      session_id?: string;
+      logout_all_devices: boolean;
+      session_id: string;
+      tenant_id: string;
     };
   }
 
@@ -151,15 +152,33 @@ export async function logoutApi(params: AuthApi.LogoutParams) {
 /**
  * 统一登出接口
  */
-export async function unifiedLogoutApi(
-  logoutType: 'all' | 'current' = 'current',
-) {
+export async function unifiedLogoutApi(params: {
+  logoutAllDevices: boolean;
+  sessionId?: string;
+  tenantId?: string;
+}) {
   const { generateRequestMeta } = await import('#/utils/device');
+  const { logoutAllDevices, sessionId, tenantId } = params;
+
+  // 从全局状态获取必要参数（如果未提供）
+  const authStore = await import('#/store/auth').then((m) => m.useAuthStore());
+  const effectiveTenantId = tenantId || authStore.tenantInfo?.tenant_id;
+  const effectiveSessionId = sessionId || authStore.sessionInfo?.session_id;
+
+  if (!effectiveTenantId) {
+    throw new Error('Tenant ID is required for logout');
+  }
+
+  if (!effectiveSessionId) {
+    throw new Error('Session ID is required for logout');
+  }
 
   const logoutParams: AuthApi.LogoutParams = {
     meta: generateRequestMeta(),
     data: {
-      logout_type: logoutType,
+      logout_all_devices: logoutAllDevices,
+      session_id: effectiveSessionId,
+      tenant_id: effectiveTenantId,
     },
   };
 
@@ -296,5 +315,8 @@ export async function unifiedResetPasswordApi(params: {
  * 获取用户权限码
  */
 export async function getAccessCodesApi() {
-  return requestClient.get<string[]>('/v1/auth/codes');
+  // return requestClient.post<string[]>('/v1/auth/codes');
+  return {
+    data: ['AC_100100', 'AC_100110', 'AC_100120', 'AC_100010'],
+  };
 }

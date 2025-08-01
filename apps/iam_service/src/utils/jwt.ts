@@ -9,8 +9,8 @@ import { importSPKI, jwtVerify } from 'jose';
 // 存储JWT公钥(实际项目中应从环境变量获取完整PEM格式公钥)
 // 格式示例: '-----BEGIN PUBLIC KEY-----...公钥内容...-----END PUBLIC KEY-----'
 // 注意：环境变量中的公钥不应包含引号
+// 开发环境下禁用JWT签名验证
 const JWT_PUBLIC_KEY = import.meta.env.VITE_JWT_PUBLIC_KEY || '';
-
 export interface JwtPayload {
   user_id: string; // 用户ID
   tenant_id: string; // 租户ID
@@ -99,19 +99,31 @@ export async function parseJwtToken(token: string): Promise<JwtPayload> {
       throw new Error('Invalid JWT token: cannot decode token parts');
     }
 
-    // 如果没有配置公钥或公钥无效，则跳过签名验证，直接返回解码的payload
-    if (
-      !JWT_PUBLIC_KEY ||
-      JWT_PUBLIC_KEY.includes('dummy') ||
-      JWT_PUBLIC_KEY.includes('seventyVq1QZ3')
-    ) {
+    // 开发环境下跳过签名验证，直接返回解码的payload
+    if (!JWT_PUBLIC_KEY || JWT_PUBLIC_KEY.trim() === '') {
       console.warn(
-        'JWT public key is not configured or is a placeholder. Skipping signature verification.',
+        '🔓 Development Mode: JWT signature verification is disabled.',
       );
-      console.warn('WARNING: This is not secure for production use!');
+      console.warn('⚠️  This is not secure for production use!');
 
-      // 直接返回解码的payload，但添加警告
-      return decodedPayload as JwtPayload;
+      // 确保payload包含必要的字段，如果缺少则提供默认值
+      const payload = {
+        tenant_id:
+          decodedPayload.tenant_id || '00000000-0000-0000-0000-000000000000',
+        user_id: decodedPayload.user_id || decodedPayload.sub || 'unknown',
+        session_id: decodedPayload.session_id || 'dev-session',
+        roles: decodedPayload.roles || ['user'],
+        permissions_hash: decodedPayload.permissions_hash || 'dev-hash',
+        device_fingerprint: decodedPayload.device_fingerprint || 'dev-device',
+        ip_address: decodedPayload.ip_address || '127.0.0.1',
+        iat: decodedPayload.iat || Math.floor(Date.now() / 1000),
+        exp: decodedPayload.exp || Math.floor(Date.now() / 1000) + 3600,
+        type: decodedPayload.type || 'access',
+        ...decodedPayload, // 保留原有字段
+      };
+
+      console.warn('🔍 Parsed JWT payload:', payload);
+      return payload as JwtPayload;
     }
 
     try {
@@ -126,12 +138,29 @@ export async function parseJwtToken(token: string): Promise<JwtPayload> {
     } catch (keyError) {
       console.error('Failed to import or verify with public key:', keyError);
       console.warn(
-        'Falling back to unverified token parsing due to key issues.',
+        '🔓 Falling back to unverified token parsing due to key issues.',
       );
-      console.warn('WARNING: This is not secure for production use!');
+      console.warn('⚠️  WARNING: This is not secure for production use!');
 
-      // 如果公钥导入失败，返回未验证的payload
-      return decodedPayload as JwtPayload;
+      // 如果公钥导入失败，返回未验证的payload，确保包含必要字段
+      const fallbackPayload = {
+        tenant_id:
+          decodedPayload.tenant_id || '00000000-0000-0000-0000-000000000000',
+        user_id: decodedPayload.user_id || decodedPayload.sub || 'unknown',
+        session_id: decodedPayload.session_id || 'fallback-session',
+        roles: decodedPayload.roles || ['user'],
+        permissions_hash: decodedPayload.permissions_hash || 'fallback-hash',
+        device_fingerprint:
+          decodedPayload.device_fingerprint || 'fallback-device',
+        ip_address: decodedPayload.ip_address || '127.0.0.1',
+        iat: decodedPayload.iat || Math.floor(Date.now() / 1000),
+        exp: decodedPayload.exp || Math.floor(Date.now() / 1000) + 3600,
+        type: decodedPayload.type || 'access',
+        ...decodedPayload, // 保留原有字段
+      };
+
+      console.warn('🔍 Fallback JWT payload:', fallbackPayload);
+      return fallbackPayload as JwtPayload;
     }
   } catch (error) {
     console.error('Failed to parse JWT token:', error);
