@@ -1,0 +1,149 @@
+{
+  "title": "Tenant Management",
+  "list": "Tenant List",
+  "detail": "Tenant Detail",
+  "create": "Create Tenant",
+  "edit": "Edit Tenant",
+  "delete": "Delete Tenant",
+  "settings": "Tenant Settings",
+  "quotas": "Quota Management",
+  "status": {
+    "active": "Active",
+    "inactive": "Inactive",
+    "pending": "Pending",
+    "suspended": "Suspended",
+    "deleted": "Deleted"
+  },
+  "fields": {
+    "tenantId": "Tenant ID",
+    "tenantName": "Tenant Name",
+    "tenantCode": "Tenant Code",
+    "description": "Description",
+    "status": "Status",
+    "maxUsers": "Max Users",
+    "currentUsers": "Current Users",
+    "createdAt": "Created At",
+    "updatedAt": "Updated At",
+    "userCount": "User Count",
+    "activeUserCount": "Active Users",
+    "roleCount": "Role Count",
+    "permissionCount": "Permission Count"
+  },
+  "form": {
+    "tenantNamePlaceholder": "Enter tenant name",
+    "tenantCodePlaceholder": "Enter tenant code",
+    "descriptionPlaceholder": "Enter tenant description",
+    "maxUsersPlaceholder": "Enter max users",
+    "createAdminUser": "Create Admin User",
+    "adminUsername": "Admin Username",
+    "adminEmail": "Admin Email",
+    "adminPassword": "Admin Password",
+    "adminUsernamePlaceholder": "Enter admin username",
+    "adminEmailPlaceholder": "Enter admin email",
+    "adminPasswordPlaceholder": "Enter admin password",
+    "adminUserSettings": "Admin User Settings"
+  },
+  "search": {
+    "placeholder": "Search tenant name or code",
+    "statusFilter": "Status Filter",
+    "allStatus": "All Status"
+  },
+  "actions": {
+    "view": "View",
+    "edit": "Edit",
+    "delete": "Delete",
+    "activate": "Activate",
+    "suspend": "Suspend",
+    "settings": "Settings",
+    "quotas": "Quotas",
+    "refresh": "Refresh",
+    "export": "Export",
+    "import": "Import"
+  },
+  "dialog": {
+    "createTitle": "Create Tenant",
+    "editTitle": "Edit Tenant",
+    "deleteTitle": "Delete Tenant",
+    "deleteConfirm": "Are you sure to delete tenant \"{name}\"?",
+    "deleteWarning": "This action cannot be undone, please proceed with caution!",
+    "hardDelete": "Hard Delete",
+    "forceDelete": "Force Delete",
+    "statusChangeTitle": "Change Tenant Status",
+    "statusChangeConfirm": "Are you sure to change tenant \"{name}\" status to \"{status}\"?",
+    "statusChangeReason": "Change Reason",
+    "statusChangeReasonPlaceholder": "Enter status change reason"
+  },
+  "messages": {
+    "fetchListFailed": "Failed to fetch tenant list",
+    "fetchDetailFailed": "Failed to fetch tenant detail",
+    "fetchSettingsFailed": "Failed to fetch tenant settings",
+    "fetchQuotasFailed": "Failed to fetch tenant quotas",
+    "createSuccess": "Create Success",
+    "createSuccessDesc": "Tenant \"{name}\" created successfully",
+    "createFailed": "Failed to create tenant",
+    "updateSuccess": "Update Success",
+    "updateSuccessDesc": "Tenant \"{name}\" updated successfully",
+    "updateFailed": "Failed to update tenant",
+    "updateSettingsSuccess": "Settings Update Success",
+    "updateSettingsSuccessDesc": "Tenant settings updated successfully",
+    "updateSettingsFailed": "Failed to update settings",
+    "deleteSuccess": "Delete Success",
+    "deleteSuccessDesc": "Tenant \"{name}\" deleted successfully",
+    "deleteFailed": "Failed to delete tenant",
+    "statusChangeSuccess": "Status Change Success",
+    "statusChangeSuccessDesc": "Tenant \"{name}\" status changed to \"{status}\"",
+    "statusChangeFailed": "Failed to change status"
+  },
+  "validation": {
+    "tenantNameRequired": "Tenant name is required",
+    "tenantCodeRequired": "Tenant code is required",
+    "tenantCodeFormat": "Tenant code can only contain letters, numbers, underscores and hyphens",
+    "maxUsersRequired": "Max users is required",
+    "maxUsersRange": "Max users range: 1-100000",
+    "adminUsernameRequired": "Admin username is required",
+    "adminEmailRequired": "Admin email is required",
+    "adminEmailFormat": "Please enter a valid email format",
+    "adminPasswordRequired": "Admin password is required",
+    "adminPasswordLength": "Admin password must be at least 8 characters"
+  },
+  "statistics": {
+    "totalTenants": "Total Tenants",
+    "activeTenants": "Active Tenants",
+    "suspendedTenants": "Suspended Tenants",
+    "totalUsers": "Total Users",
+    "overview": "Overview",
+    "trend": "Trend",
+    "usage": "Usage"
+  },
+  "notFound": "Tenant not found",
+  "quotas": {
+    "title": "Quota Management",
+    "users": "User Quota",
+    "storage": "Storage Quota",
+    "apiCalls": "API Calls Quota",
+    "sessions": "Session Quota",
+    "limit": "Limit",
+    "used": "Used",
+    "remaining": "Remaining",
+    "percentage": "Usage",
+    "status": {
+      "normal": "Normal",
+      "warning": "Warning",
+      "exceeded": "Exceeded"
+    }
+  },
+  "settings": {
+    "title": "Tenant Settings",
+    "passwordPolicy": "Password Policy",
+    "sessionConfig": "Session Config",
+    "securityConfig": "Security Config",
+    "featureModules": "Feature Modules",
+    "storageConfig": "Storage Config",
+    "notificationConfig": "Notification Config",
+    "mergeMode": {
+      "merge": "Merge Mode",
+      "replace": "Replace Mode",
+      "patch": "Patch Mode"
+    }
+  }
+}

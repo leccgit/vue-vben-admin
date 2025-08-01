@@ -1,3 +1,4 @@
+import type { UserProfileResponse } from '#/api/core/user';
 import type {
   SecurityWarning,
   SessionInfo,
@@ -21,12 +22,12 @@ import {
   getAccessCodesApi,
   unifiedChangePasswordApi,
   unifiedForgotPasswordApi,
-  unifiedGetUserInfoApi,
   unifiedLoginApi,
   unifiedLogoutApi,
   unifiedRefreshTokenApi,
   unifiedResetPasswordApi,
 } from '#/api';
+import { unifiedGetUserInfoApi } from '#/api/core/user';
 import { $t } from '#/locales';
 import { parseJwtToken } from '#/utils/jwt';
 import {
@@ -49,7 +50,7 @@ export const useAuthStore = defineStore('auth', () => {
   const passwordResetLoading = ref(false);
 
   // 认证信息状态
-  const userInfo = ref<null | UserBasicInfo>(null);
+  const userInfo = ref<null | UserBasicInfo | UserProfileResponse>(null);
   const tenantInfo = ref<null | TenantBasicInfo>(null);
   const tokenInfo = ref<null | TokenInfo>(null);
   const sessionInfo = ref<null | SessionInfo>(null);
@@ -67,10 +68,15 @@ export const useAuthStore = defineStore('auth', () => {
     return now >= expiresAt;
   });
   const needsPasswordChange = computed(() => {
-    return (
-      userInfo.value?.password_expires_in !== undefined &&
-      userInfo.value.password_expires_in <= 0
-    );
+    if (!userInfo.value) return false;
+    // 检查是否是 UserBasicInfo 类型
+    if ('password_expires_in' in userInfo.value) {
+      return (
+        userInfo.value.password_expires_in !== undefined &&
+        userInfo.value.password_expires_in <= 0
+      );
+    }
+    return false;
   });
 
   /**
@@ -602,8 +608,6 @@ export const useAuthStore = defineStore('auth', () => {
         const response = await unifiedGetUserInfoApi({
           tenantId,
           userId,
-          includePermissions: true,
-          includeSessions: false,
         });
 
         // 更新本地用户信息
@@ -654,6 +658,20 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /**
+   * 类型守卫：检查是否是 UserProfileResponse 类型
+   */
+  function isUserProfileResponse(user: any): user is UserProfileResponse {
+    return user && 'preferences' in user && 'security_info' in user;
+  }
+
+  /**
+   * 类型守卫：检查是否是 UserBasicInfo 类型
+   */
+  function isUserBasicInfo(user: any): user is UserBasicInfo {
+    return user && 'status' in user && 'roles' in user && 'permissions' in user;
+  }
+
+  /**
    * 获取账户状态
    */
   function getAccountStatus(status: string): string {
@@ -663,23 +681,47 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /**
-   * 将 UserBasicInfo 转换为 BasicUserInfo 格式
+   * 将用户信息转换为 BasicUserInfo 格式
    */
-  function convertToBasicUserInfo(user: UserBasicInfo): any {
-    return {
-      userId: user.user_id,
-      username: user.username,
-      realName: user.nickname,
-      avatar: user.avatar || '',
-      roles: user.roles,
-      email: user.email,
-      phone: user.phone,
-      permissions: user.permissions,
-      mfaEnabled: user.mfa_enabled,
-      passwordExpiresIn: user.password_expires_in,
-      lastLoginTime: user.last_login_at,
-      accountStatus: getAccountStatus(user.status),
-    };
+  function convertToBasicUserInfo(
+    user: UserBasicInfo | UserProfileResponse,
+  ): any {
+    if (isUserProfileResponse(user)) {
+      // 处理 UserProfileResponse 类型
+      return {
+        userId: user.user_id,
+        username: user.username,
+        realName: user.nickname || user.username,
+        avatar: user.profile?.avatar || '',
+        roles: [], // 角色信息需要从其他地方获取
+        email: user.email,
+        phone: user.phone,
+        permissions: [], // 权限信息需要从其他地方获取
+        mfaEnabled: user.security_info.mfa_enabled,
+        passwordExpiresIn: undefined, // 密码过期信息需要从其他地方获取
+        lastLoginTime: user.security_info.last_login_at,
+        accountStatus: user.security_info.account_locked ? 'locked' : 'active',
+      };
+    } else if (isUserBasicInfo(user)) {
+      // 处理 UserBasicInfo 类型
+      return {
+        userId: user.user_id,
+        username: user.username,
+        realName: user.nickname,
+        avatar: user.avatar || '',
+        roles: user.roles,
+        email: user.email,
+        phone: user.phone,
+        permissions: user.permissions,
+        mfaEnabled: user.mfa_enabled,
+        passwordExpiresIn: user.password_expires_in,
+        lastLoginTime: user.last_login_at,
+        accountStatus: getAccountStatus(user.status),
+      };
+    }
+
+    // 默认返回空对象
+    return {};
   }
 
   function $reset() {
