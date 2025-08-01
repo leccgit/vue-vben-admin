@@ -19,6 +19,7 @@
     "build": "pnpm vite build --mode production",
     "build:analyze": "pnpm vite build --mode analyze",
     "dev": "pnpm vite --mode development",
+    "dev:no-check": "VITE_SKIP_TYPE_CHECK=true pnpm vite --mode development --host",
     "preview": "vite preview",
     "typecheck": "vue-tsc --noEmit --skipLibCheck"
   },

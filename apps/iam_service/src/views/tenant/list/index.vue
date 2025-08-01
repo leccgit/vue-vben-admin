@@ -4,15 +4,16 @@ import { useRouter } from 'vue-router';
 
 import {
   ArrowDown,
-  Building2,
   CircleCheck,
-  CirclePause,
+  OfficeBuilding,
   Plus,
   Refresh,
   Search,
-  Users,
+  User,
+  VideoPause,
 } from '@element-plus/icons-vue';
 import { ElMessageBox } from 'element-plus';
+import { storeToRefs } from 'pinia';
 
 import { $t } from '#/locales';
 import { useTenantStore } from '#/store/tenant';
@@ -30,7 +31,7 @@ const {
   listLoading,
   pagination,
   searchParams,
-} = tenantStore;
+} = storeToRefs(tenantStore);
 
 // 状态选项
 const statusOptions = [
@@ -44,7 +45,7 @@ const statusOptions = [
 // 计算总用户数
 const totalUsers = computed(() => {
   return tenantList.value.reduce(
-    (sum, tenant) => sum + tenant.current_users,
+    (sum: number, tenant: any) => sum + tenant.current_users,
     0,
   );
 });
@@ -79,7 +80,7 @@ async function handleRefresh() {
 }
 
 async function handleSearch() {
-  pagination.current = 1;
+  pagination.value.current = 1;
   await tenantStore.fetchTenantList();
 }
 
@@ -89,17 +90,20 @@ function handleSortChange(_sort: any) {
 }
 
 async function handleSizeChange(size: number) {
-  pagination.pageSize = size;
-  pagination.current = 1;
+  pagination.value.pageSize = size;
+  pagination.value.current = 1;
   await tenantStore.fetchTenantList();
 }
 
 async function handleCurrentChange(page: number) {
-  pagination.current = page;
+  pagination.value.current = page;
   await tenantStore.fetchTenantList();
 }
 
-async function handleDropdownCommand(command: string, tenant: any) {
+async function handleDropdownCommand(
+  command: 'activate' | 'delete' | 'quotas' | 'settings' | 'suspend',
+  tenant: { status: string; tenant_id: string; tenant_name: string },
+) {
   switch (command) {
     case 'activate': {
       await handleStatusChange(tenant, 'active');
@@ -249,7 +253,7 @@ onMounted(async () => {
           <el-card class="stat-card">
             <div class="stat-content">
               <div class="stat-icon total">
-                <el-icon><Building2 /></el-icon>
+                <el-icon><OfficeBuilding /></el-icon>
               </div>
               <div class="stat-info">
                 <div class="stat-value">{{ totalTenants }}</div>
@@ -279,7 +283,7 @@ onMounted(async () => {
           <el-card class="stat-card">
             <div class="stat-content">
               <div class="stat-icon suspended">
-                <el-icon><CirclePause /></el-icon>
+                <el-icon><VideoPause /></el-icon>
               </div>
               <div class="stat-info">
                 <div class="stat-value">{{ suspendedTenants.length }}</div>
@@ -294,7 +298,7 @@ onMounted(async () => {
           <el-card class="stat-card">
             <div class="stat-content">
               <div class="stat-icon users">
-                <el-icon><Users /></el-icon>
+                <el-icon><User /></el-icon>
               </div>
               <div class="stat-info">
                 <div class="stat-value">{{ totalUsers }}</div>
@@ -390,7 +394,16 @@ onMounted(async () => {
                 {{ $t('tenant.actions.edit') }}
               </el-button>
               <el-dropdown
-                @command="(command) => handleDropdownCommand(command, row)"
+                @command="
+                  (
+                    command:
+                      | 'activate'
+                      | 'delete'
+                      | 'quotas'
+                      | 'settings'
+                      | 'suspend',
+                  ) => handleDropdownCommand(command, row)
+                "
               >
                 <el-button type="primary" size="small" text>
                   更多<el-icon class="el-icon--right"><ArrowDown /></el-icon>

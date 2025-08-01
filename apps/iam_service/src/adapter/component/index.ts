@@ -118,6 +118,80 @@ const ElUpload = defineAsyncComponent(() =>
   ]).then(([res]) => res.ElUpload),
 );
 
+// 添加租户列表页面需要的组件
+const ElCard = defineAsyncComponent(() =>
+  Promise.all([
+    import('element-plus/es/components/card/index'),
+    import('element-plus/es/components/card/style/css'),
+  ]).then(([res]) => res.ElCard),
+);
+const ElRow = defineAsyncComponent(() =>
+  Promise.all([
+    import('element-plus/es/components/row/index'),
+    import('element-plus/es/components/row/style/css'),
+  ]).then(([res]) => res.ElRow),
+);
+const ElCol = defineAsyncComponent(() =>
+  Promise.all([
+    import('element-plus/es/components/col/index'),
+    import('element-plus/es/components/col/style/css'),
+  ]).then(([res]) => res.ElCol),
+);
+const ElIcon = defineAsyncComponent(() =>
+  Promise.all([
+    import('element-plus/es/components/icon/index'),
+    import('element-plus/es/components/icon/style/css'),
+  ]).then(([res]) => res.ElIcon),
+);
+const ElTable = defineAsyncComponent(() =>
+  Promise.all([
+    import('element-plus/es/components/table/index'),
+    import('element-plus/es/components/table/style/css'),
+  ]).then(([res]) => res.ElTable),
+);
+const ElTableColumn = defineAsyncComponent(() =>
+  Promise.all([
+    import('element-plus/es/components/table/index'),
+    import('element-plus/es/components/table-column/style/css'),
+  ]).then(([res]) => res.ElTableColumn),
+);
+const ElTag = defineAsyncComponent(() =>
+  Promise.all([
+    import('element-plus/es/components/tag/index'),
+    import('element-plus/es/components/tag/style/css'),
+  ]).then(([res]) => res.ElTag),
+);
+const ElDropdown = defineAsyncComponent(() =>
+  Promise.all([
+    import('element-plus/es/components/dropdown/index'),
+    import('element-plus/es/components/dropdown/style/css'),
+  ]).then(([res]) => res.ElDropdown),
+);
+const ElDropdownMenu = defineAsyncComponent(() =>
+  Promise.all([
+    import('element-plus/es/components/dropdown/index'),
+    import('element-plus/es/components/dropdown-menu/style/css'),
+  ]).then(([res]) => res.ElDropdownMenu),
+);
+const ElDropdownItem = defineAsyncComponent(() =>
+  Promise.all([
+    import('element-plus/es/components/dropdown/index'),
+    import('element-plus/es/components/dropdown-item/style/css'),
+  ]).then(([res]) => res.ElDropdownItem),
+);
+const ElPagination = defineAsyncComponent(() =>
+  Promise.all([
+    import('element-plus/es/components/pagination/index'),
+    import('element-plus/es/components/pagination/style/css'),
+  ]).then(([res]) => res.ElPagination),
+);
+const ElOption = defineAsyncComponent(() =>
+  Promise.all([
+    import('element-plus/es/components/select/index'),
+    import('element-plus/es/components/option/style/css'),
+  ]).then(([res]) => res.ElOption),
+);
+
 const withDefaultPlaceholder = <T extends Component>(
   component: T,
   type: 'input' | 'select',
@@ -308,6 +382,19 @@ async function initComponentAdapter() {
     },
     TreeSelect: withDefaultPlaceholder(ElTreeSelect, 'select'),
     Upload: ElUpload,
+    // 添加租户列表页面需要的组件
+    Card: ElCard,
+    Row: ElRow,
+    Col: ElCol,
+    Icon: ElIcon,
+    Table: ElTable,
+    TableColumn: ElTableColumn,
+    Tag: ElTag,
+    Dropdown: ElDropdown,
+    DropdownMenu: ElDropdownMenu,
+    DropdownItem: ElDropdownItem,
+    Pagination: ElPagination,
+    Option: ElOption,
   };
 
   // 将组件注册到全局共享状态中

@@ -86,8 +86,9 @@ export const useTenantStore = defineStore('tenant', () => {
 
       const response = await listTenantsApi(requestParams);
 
-      if (response.code === 200 && response.data) {
-        const { tenants, total, next_cursor, has_more } = response.data;
+      // 由于 listTenantsApi 使用 responseReturn: 'raw'，直接使用响应数据
+      if (response && response.tenants) {
+        const { tenants, total, next_cursor, has_more } = response;
 
         // 如果是第一页或者没有cursor，则替换列表；否则追加
         if (params.cursor) {
@@ -103,9 +104,9 @@ export const useTenantStore = defineStore('tenant', () => {
           hasMore: has_more,
         };
 
-        return response.data;
+        return response;
       } else {
-        throw new Error(response.message || 'Failed to fetch tenant list');
+        throw new Error('Failed to fetch tenant list');
       }
     } catch (error: any) {
       console.error('Fetch tenant list error:', error);
@@ -125,11 +126,11 @@ export const useTenantStore = defineStore('tenant', () => {
 
       const response = await getTenantDetailApi(tenantId);
 
-      if (response.code === 200 && response.data) {
-        currentTenant.value = response.data.tenant;
-        return response.data.tenant;
+      if (response && response.tenant) {
+        currentTenant.value = response.tenant;
+        return response.tenant;
       } else {
-        throw new Error(response.message || 'Failed to fetch tenant detail');
+        throw new Error('Failed to fetch tenant detail');
       }
     } catch (error: any) {
       console.error('Fetch tenant detail error:', error);
@@ -149,8 +150,8 @@ export const useTenantStore = defineStore('tenant', () => {
 
       const response = await createTenantApi(params);
 
-      if (response.code === 200 && response.data) {
-        const newTenant = response.data.tenant;
+      if (response && response.tenant) {
+        const newTenant = response.tenant;
 
         // 添加到列表开头
         tenantList.value.unshift(newTenant);
@@ -166,7 +167,7 @@ export const useTenantStore = defineStore('tenant', () => {
 
         return newTenant;
       } else {
-        throw new Error(response.message || 'Failed to create tenant');
+        throw new Error('Failed to create tenant');
       }
     } catch (error: any) {
       console.error('Create tenant error:', error);
@@ -186,8 +187,8 @@ export const useTenantStore = defineStore('tenant', () => {
 
       const response = await updateTenantApi(params);
 
-      if (response.code === 200 && response.data) {
-        const updatedTenant = response.data.tenant;
+      if (response && response.tenant) {
+        const updatedTenant = response.tenant;
 
         // 更新列表中的租户信息
         const index = tenantList.value.findIndex(
@@ -212,7 +213,7 @@ export const useTenantStore = defineStore('tenant', () => {
 
         return updatedTenant;
       } else {
-        throw new Error(response.message || 'Failed to update tenant');
+        throw new Error('Failed to update tenant');
       }
     } catch (error: any) {
       console.error('Update tenant error:', error);
@@ -236,33 +237,37 @@ export const useTenantStore = defineStore('tenant', () => {
 
       const response = await deleteTenantApi(tenantId, hardDelete, forceDelete);
 
-      if (response.code === 200) {
+      if (response) {
         // 从列表中移除
         const index = tenantList.value.findIndex(
           (t) => t.tenant_id === tenantId,
         );
+        let deletedTenantName = 'Unknown';
         if (index !== -1) {
           const deletedTenant = tenantList.value[index];
+          if (deletedTenant) {
+            deletedTenantName = deletedTenant.tenant_name;
+          }
           tenantList.value.splice(index, 1);
           pagination.value.total -= 1;
-
-          ElNotification({
-            title: $t('tenant.deleteSuccess'),
-            message: $t('tenant.deleteSuccessDesc', {
-              name: deletedTenant.tenant_name,
-            }),
-            type: 'success',
-          });
         }
+
+        ElNotification({
+          title: $t('tenant.deleteSuccess'),
+          message: $t('tenant.deleteSuccessDesc', {
+            name: deletedTenantName,
+          }),
+          type: 'success',
+        });
 
         // 清除当前租户信息
         if (currentTenant.value?.tenant_id === tenantId) {
           currentTenant.value = null;
         }
 
-        return response.data;
+        return response;
       } else {
-        throw new Error(response.message || 'Failed to delete tenant');
+        throw new Error('Failed to delete tenant');
       }
     } catch (error: any) {
       console.error('Delete tenant error:', error);
@@ -282,8 +287,8 @@ export const useTenantStore = defineStore('tenant', () => {
 
       const response = await changeTenantStatusApi(params);
 
-      if (response.code === 200 && response.data) {
-        const { tenant_id, new_status } = response.data;
+      if (response) {
+        const { tenant_id, new_status } = response;
 
         // 更新列表中的租户状态
         const tenant = tenantList.value.find((t) => t.tenant_id === tenant_id);
@@ -305,9 +310,9 @@ export const useTenantStore = defineStore('tenant', () => {
           type: 'success',
         });
 
-        return response.data;
+        return response;
       } else {
-        throw new Error(response.message || 'Failed to change tenant status');
+        throw new Error('Failed to change tenant status');
       }
     } catch (error: any) {
       console.error('Change tenant status error:', error);
@@ -327,11 +332,11 @@ export const useTenantStore = defineStore('tenant', () => {
 
       const response = await getTenantSettingsApi(tenantId);
 
-      if (response.code === 200 && response.data) {
-        tenantSettings.value = response.data;
-        return response.data;
+      if (response) {
+        tenantSettings.value = response;
+        return response;
       } else {
-        throw new Error(response.message || 'Failed to fetch tenant settings');
+        throw new Error('Failed to fetch tenant settings');
       }
     } catch (error: any) {
       console.error('Fetch tenant settings error:', error);
@@ -351,11 +356,11 @@ export const useTenantStore = defineStore('tenant', () => {
 
       const response = await updateTenantSettingsApi(params);
 
-      if (response.code === 200 && response.data) {
+      if (response) {
         // 更新本地配置
         if (tenantSettings.value?.tenant_id === params.tenant_id) {
-          tenantSettings.value.settings = response.data.settings;
-          tenantSettings.value.updated_at = response.data.updated_at;
+          tenantSettings.value.settings = response.settings;
+          tenantSettings.value.last_updated = response.updated_at;
         }
 
         ElNotification({
@@ -364,9 +369,9 @@ export const useTenantStore = defineStore('tenant', () => {
           type: 'success',
         });
 
-        return response.data;
+        return response;
       } else {
-        throw new Error(response.message || 'Failed to update tenant settings');
+        throw new Error('Failed to update tenant settings');
       }
     } catch (error: any) {
       console.error('Update tenant settings error:', error);
@@ -386,11 +391,12 @@ export const useTenantStore = defineStore('tenant', () => {
 
       const response = await checkTenantQuotasApi(tenantId);
 
-      if (response.code === 200 && response.data) {
-        tenantQuotas.value = response.data;
-        return response.data;
+      // checkTenantQuotasApi 使用 responseReturn: 'raw'，直接使用响应数据
+      if (response) {
+        tenantQuotas.value = response;
+        return response;
       } else {
-        throw new Error(response.message || 'Failed to fetch tenant quotas');
+        throw new Error('Failed to fetch tenant quotas');
       }
     } catch (error: any) {
       console.error('Fetch tenant quotas error:', error);

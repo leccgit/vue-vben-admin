@@ -12,6 +12,7 @@ import {
   UserFilled,
 } from '@element-plus/icons-vue';
 import { ElMessageBox } from 'element-plus';
+import { storeToRefs } from 'pinia';
 
 import { $t } from '#/locales';
 import { useTenantStore } from '#/store/tenant';
@@ -21,7 +22,8 @@ const route = useRoute();
 const router = useRouter();
 const tenantStore = useTenantStore();
 
-const { currentTenant, detailLoading } = tenantStore;
+const { detailLoading } = tenantStore;
+const { currentTenant } = storeToRefs(tenantStore);
 
 // 获取状态标签类型
 function getStatusTagType(status: string) {

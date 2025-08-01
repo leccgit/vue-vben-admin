@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { parseJwtToken, addBase64Padding, safeDecodeJwtPart } from '../jwt';
+
+import { addBase64Padding, parseJwtToken } from '../jwt';
 
 // Mock the environment variable
 vi.mock('import.meta', () => ({
@@ -8,7 +9,7 @@ vi.mock('import.meta', () => ({
   },
 }));
 
-describe('JWT Utils - Development Mode', () => {
+describe('jWT Utils - Development Mode', () => {
   describe('addBase64Padding', () => {
     it('should add correct padding to base64 strings', () => {
       expect(addBase64Padding('YWJj')).toBe('YWJj'); // No padding needed
@@ -41,7 +42,7 @@ describe('JWT Utils - Development Mode', () => {
       const token = `${headerB64}.${payloadB64}.${signature}`;
 
       const result = await parseJwtToken(token);
-      
+
       // Should return the payload with all required fields
       expect(result.user_id).toBe('test-user-123');
       expect(result.tenant_id).toBe('test-tenant-456');
@@ -66,7 +67,7 @@ describe('JWT Utils - Development Mode', () => {
       const token = `${headerB64}.${payloadB64}.${signature}`;
 
       const result = await parseJwtToken(token);
-      
+
       // Should provide default values for missing fields
       expect(result.user_id).toBe('minimal-user'); // Should use 'sub' as fallback
       expect(result.tenant_id).toBe('00000000-0000-0000-0000-000000000000'); // Default tenant
@@ -80,17 +81,17 @@ describe('JWT Utils - Development Mode', () => {
       const payload = {
         user_id: 'padding-test-user',
         tenant_id: 'padding-test-tenant',
-        iat: 1234567890,
-        exp: 1234567890 + 3600,
+        iat: 1_234_567_890,
+        exp: 1_234_567_890 + 3600,
       };
 
       let headerB64 = btoa(JSON.stringify(header));
       let payloadB64 = btoa(JSON.stringify(payload));
-      
+
       // Remove padding to simulate the original issue
-      headerB64 = headerB64.replace(/=/g, '');
-      payloadB64 = payloadB64.replace(/=/g, '');
-      
+      headerB64 = headerB64.replaceAll('=', '');
+      payloadB64 = payloadB64.replaceAll('=', '');
+
       const signature = 'fake-signature';
       const token = `${headerB64}.${payloadB64}.${signature}`;
 

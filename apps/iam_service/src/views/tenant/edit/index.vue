@@ -7,6 +7,7 @@ import { onMounted, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import { ArrowLeft } from '@element-plus/icons-vue';
+import { storeToRefs } from 'pinia';
 
 import { $t } from '#/locales';
 import { useTenantStore } from '#/store/tenant';
@@ -15,7 +16,8 @@ const route = useRoute();
 const router = useRouter();
 const tenantStore = useTenantStore();
 
-const { currentTenant, detailLoading, operationLoading } = tenantStore;
+const { detailLoading, operationLoading } = tenantStore;
+const { currentTenant } = storeToRefs(tenantStore);
 
 // 表单引用
 const formRef = ref<FormInstance>();
