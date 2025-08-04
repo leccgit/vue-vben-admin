@@ -44,11 +44,14 @@
     "adminUserSettings": "管理员用户设置"
   },
   "search": {
+    "keyword": "关键词",
+    "status": "状态",
     "placeholder": "搜索租户名称或编码",
     "statusFilter": "状态筛选",
     "allStatus": "全部状态"
   },
   "actions": {
+    "create": "创建租户",
     "view": "查看",
     "edit": "编辑",
     "delete": "删除",

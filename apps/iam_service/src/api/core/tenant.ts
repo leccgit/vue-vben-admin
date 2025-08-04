@@ -58,10 +58,20 @@ export interface ListTenantsRequest {
 }
 
 export interface ListTenantsResponse {
-  tenants: TenantBasicInfo[];
+  items: TenantBasicInfo[];
   total: number;
   next_cursor?: string;
   has_more: boolean;
+}
+
+// API 响应的完整格式
+export interface ListTenantsApiResponse {
+  status: string;
+  code: number;
+  data: ListTenantsResponse;
+  message: string;
+  timestamp: string;
+  request_id: string;
 }
 
 export interface ChangeTenantStatusRequest {
@@ -140,7 +150,7 @@ export async function createTenantApi(params: CreateTenantRequest) {
  */
 export async function listTenantsApi(params: ListTenantsRequest = {}) {
   const requestData = await generateRequestData(params);
-  return requestClient.post<ListTenantsResponse>(
+  return requestClient.post<ListTenantsApiResponse>(
     '/v1/tenants/list',
     requestData,
     {

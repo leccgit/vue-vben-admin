@@ -86,25 +86,25 @@ export const useTenantStore = defineStore('tenant', () => {
 
       const response = await listTenantsApi(requestParams);
 
-      // 由于 listTenantsApi 使用 responseReturn: 'raw'，直接使用响应数据
-      if (response && response.tenants) {
-        const { tenants, total, next_cursor, has_more } = response;
+      // 由于 listTenantsApi 使用 responseReturn: 'raw'，需要从 data 中获取数据
+      if (response && response.data && response.data.data) {
+        const { items, total } = response.data.data;
 
         // 如果是第一页或者没有cursor，则替换列表；否则追加
         if (params.cursor) {
-          tenantList.value.push(...tenants);
+          tenantList.value.push(...items);
         } else {
-          tenantList.value = tenants;
+          tenantList.value = items;
         }
 
         pagination.value = {
           ...pagination.value,
           total,
-          nextCursor: next_cursor,
-          hasMore: has_more,
+          nextCursor: response.data.next_cursor,
+          hasMore: response.data.has_more || false,
         };
 
-        return response;
+        return response.data.data;
       } else {
         throw new Error('Failed to fetch tenant list');
       }

@@ -4,7 +4,9 @@ import ElementPlus from 'unplugin-element-plus/vite';
 
 export default defineConfig(async () => {
   return {
-    application: {},
+    application: {
+      vxeTableLazyImport: true,
+    },
     vite: {
       plugins: [
         ElementPlus({

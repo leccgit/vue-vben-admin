@@ -1,37 +1,24 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
+import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 
 import {
-  ArrowDown,
   CircleCheck,
   OfficeBuilding,
   Plus,
-  Refresh,
-  Search,
   User,
   VideoPause,
 } from '@element-plus/icons-vue';
-import { ElMessageBox } from 'element-plus';
 import { storeToRefs } from 'pinia';
 
+import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { $t } from '#/locales';
 import { useTenantStore } from '#/store/tenant';
 import { formatDateTime } from '#/utils/date';
 
 const router = useRouter();
 const tenantStore = useTenantStore();
-
-// 响应式数据
-const {
-  tenantList,
-  activeTenants,
-  suspendedTenants,
-  totalTenants,
-  listLoading,
-  pagination,
-  searchParams,
-} = storeToRefs(tenantStore);
+const { tenantList } = storeToRefs(tenantStore);
 
 // 状态选项
 const statusOptions = [
@@ -42,536 +29,386 @@ const statusOptions = [
   { label: $t('tenant.status.deleted'), value: 'deleted' },
 ];
 
-// 计算总用户数
-const totalUsers = computed(() => {
-  return tenantList.value.reduce(
-    (sum: number, tenant: any) => sum + tenant.current_users,
-    0,
-  );
-});
-
 // 获取状态标签类型
 function getStatusTagType(status: string) {
-  const typeMap: Record<string, string> = {
+  const typeMap: Record<
+    string,
+    'danger' | 'info' | 'primary' | 'success' | 'warning'
+  > = {
     active: 'success',
     inactive: 'info',
-    pending: 'warning',
-    suspended: 'danger',
-    deleted: 'info',
+    pending: 'primary',
+    suspended: 'warning',
+    deleted: 'danger',
   };
   return typeMap[status] || 'info';
 }
 
-// 事件处理
+// 操作处理函数
 function handleCreate() {
   router.push('/tenant/create');
 }
 
-function handleView(tenant: any) {
-  router.push(`/tenant/detail/${tenant.tenant_id}`);
+function handleEdit(record: any) {
+  router.push(`/tenant/edit/${record.tenant_id}`);
 }
 
-function handleEdit(tenant: any) {
-  router.push(`/tenant/edit/${tenant.tenant_id}`);
+function handleView(record: any) {
+  router.push(`/tenant/detail/${record.tenant_id}`);
 }
 
-async function handleRefresh() {
-  await tenantStore.fetchTenantList();
+async function handleDelete(record: any) {
+  await tenantStore.deleteTenant(record.tenant_id);
+  gridApi.reload();
 }
 
-async function handleSearch() {
-  pagination.value.current = 1;
-  await tenantStore.fetchTenantList();
-}
-
-function handleSortChange(_sort: any) {
-  // TODO: 实现排序逻辑
-  // console.log('Sort change:', sort);
-}
-
-async function handleSizeChange(size: number) {
-  pagination.value.pageSize = size;
-  pagination.value.current = 1;
-  await tenantStore.fetchTenantList();
-}
-
-async function handleCurrentChange(page: number) {
-  pagination.value.current = page;
-  await tenantStore.fetchTenantList();
-}
-
-async function handleDropdownCommand(
-  command: 'activate' | 'delete' | 'quotas' | 'settings' | 'suspend',
-  tenant: { status: string; tenant_id: string; tenant_name: string },
-) {
-  switch (command) {
-    case 'activate': {
-      await handleStatusChange(tenant, 'active');
-      break;
-    }
-    case 'delete': {
-      await handleDelete(tenant);
-      break;
-    }
-    case 'quotas': {
-      router.push(`/tenant/quotas/${tenant.tenant_id}`);
-      break;
-    }
-    case 'settings': {
-      router.push(`/tenant/settings/${tenant.tenant_id}`);
-      break;
-    }
-    case 'suspend': {
-      await handleStatusChange(tenant, 'suspended');
-      break;
-    }
-  }
-}
-
-async function handleStatusChange(tenant: any, newStatus: string) {
-  try {
-    await ElMessageBox.confirm(
-      $t('tenant.dialog.statusChangeConfirm', {
-        name: tenant.tenant_name,
-        status: $t(`tenant.status.${newStatus}`),
-      }),
-      $t('tenant.dialog.statusChangeTitle'),
+// 表格配置
+const [Grid, gridApi] = useVbenVxeGrid({
+  formOptions: {
+    // 搜索表单配置
+    schema: [
       {
-        confirmButtonText: $t('common.confirm'),
-        cancelButtonText: $t('common.cancel'),
-        type: 'warning',
+        component: 'Input',
+        componentProps: {
+          placeholder: $t('tenant.search.placeholder'),
+        },
+        fieldName: 'search',
+        label: $t('tenant.search.keyword'),
       },
-    );
-
-    await tenantStore.changeTenantStatus({
-      tenant_id: tenant.tenant_id,
-      new_status: newStatus as any,
-      reason: 'Manual operation by admin',
-    });
-  } catch {
-    // 用户取消操作
-  }
-}
-
-async function handleDelete(tenant: any) {
-  try {
-    await ElMessageBox.confirm(
-      $t('tenant.dialog.deleteConfirm', { name: tenant.tenant_name }),
-      $t('tenant.dialog.deleteTitle'),
       {
-        confirmButtonText: $t('common.confirm'),
-        cancelButtonText: $t('common.cancel'),
-        type: 'error',
-        dangerouslyUseHTMLString: true,
-        message: `
-          <p>${$t('tenant.dialog.deleteConfirm', { name: tenant.tenant_name })}</p>
-          <p style="color: #f56c6c; font-size: 12px; margin-top: 8px;">
-            ${$t('tenant.dialog.deleteWarning')}
-          </p>
-        `,
+        component: 'Select',
+        componentProps: {
+          allowClear: true,
+          options: statusOptions,
+          placeholder: $t('tenant.search.statusFilter'),
+        },
+        fieldName: 'status',
+        label: $t('tenant.search.status'),
       },
-    );
+    ],
+  },
+  gridOptions: {
+    // 表格配置
+    border: true,
+    showHeaderOverflow: true,
+    showOverflow: 'tooltip',
+    keepSource: true,
+    id: 'tenant-list-grid',
+    height: 600,
+    printConfig: {},
+    sortConfig: {
+      trigger: 'cell',
+      remote: true,
+    },
+    filterConfig: {
+      remote: true,
+    },
+    pagerConfig: {
+      enabled: true,
+      pageSize: 20,
+      pageSizes: [10, 20, 50, 100],
+    },
+    toolbarConfig: {
+      refresh: true,
+      import: false,
+      export: false,
+      print: false,
+      zoom: false,
+      custom: true,
+      search: true,
+    },
+    proxyConfig: {
+      ajax: {
+        query: async ({ page, form }: { form: any; page: any }) => {
+          try {
+            const params = {
+              limit: page?.pageSize || 20,
+              cursor: page?.currentPage > 1 ? 'cursor' : undefined,
+              search: form?.search || '',
+              status: form?.status || '',
+            };
 
-    await tenantStore.deleteTenant(tenant.tenant_id);
-  } catch {
-    // 用户取消操作
-  }
-}
+            const result = await tenantStore.fetchTenantList(params);
 
-// 初始化
-onMounted(async () => {
-  await tenantStore.fetchTenantList();
+            const response = {
+              result: result?.items || [],
+              page: {
+                total: result?.total || 0,
+              },
+            };
+
+            return response;
+          } catch (error) {
+            console.error('Error in VXE Table query:', error);
+            return {
+              result: [],
+              page: {
+                total: 0,
+              },
+            };
+          }
+        },
+      },
+    },
+    columns: [
+      {
+        type: 'seq',
+        width: 60,
+        fixed: 'left',
+      },
+      {
+        field: 'tenant_name',
+        title: $t('tenant.fields.tenantName'),
+        minWidth: 200,
+        fixed: 'left',
+        slots: { default: 'tenant_name_default' },
+      },
+      {
+        field: 'status',
+        title: $t('tenant.fields.status'),
+        width: 120,
+        slots: { default: 'status_default' },
+      },
+      {
+        field: 'current_users',
+        title: $t('tenant.fields.currentUsers'),
+        width: 120,
+        sortable: true,
+      },
+      {
+        field: 'max_users',
+        title: $t('tenant.fields.maxUsers'),
+        width: 120,
+        sortable: true,
+      },
+      {
+        field: 'created_at',
+        title: $t('tenant.fields.createdAt'),
+        width: 180,
+        formatter: ({ cellValue }: { cellValue: any }) =>
+          formatDateTime(cellValue),
+      },
+      {
+        field: 'updated_at',
+        title: $t('tenant.fields.updatedAt'),
+        width: 180,
+        formatter: ({ cellValue }: { cellValue: any }) =>
+          formatDateTime(cellValue),
+      },
+      {
+        field: 'action',
+        title: $t('common.action'),
+        width: 200,
+        fixed: 'right',
+        showOverflow: false,
+        slots: { default: 'action_default' },
+      },
+    ],
+  },
+});
+
+// 统计数据
+const statistics = computed(() => {
+  const tenants = tenantList.value || [];
+  return {
+    total: tenants.length,
+    active: tenants.filter((t: any) => t.status === 'active').length,
+    suspended: tenants.filter((t: any) => t.status === 'suspended').length,
+    totalUsers: tenants.reduce(
+      (sum: number, t: any) => sum + (t.current_users || 0),
+      0,
+    ),
+  };
 });
 </script>
 
 <template>
   <div class="tenant-list-page">
-    <!-- 页面头部 -->
-    <div class="page-header">
-      <div class="header-content">
-        <h1 class="page-title">{{ $t('tenant.list') }}</h1>
-        <div class="header-actions">
-          <el-button type="primary" :icon="Plus" @click="handleCreate">
-            {{ $t('tenant.create') }}
-          </el-button>
-          <el-button
-            :icon="Refresh"
-            @click="handleRefresh"
-            :loading="listLoading"
-          >
-            {{ $t('tenant.actions.refresh') }}
-          </el-button>
+    <!-- 统计卡片 -->
+    <div class="statistics-section mb-4">
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="stat-card">
+          <div class="stat-content">
+            <div class="stat-icon total">
+              <el-icon><OfficeBuilding /></el-icon>
+            </div>
+            <div class="stat-info">
+              <div class="stat-value">{{ statistics.total }}</div>
+              <div class="stat-label">
+                {{ $t('tenant.statistics.totalTenants') }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-content">
+            <div class="stat-icon active">
+              <el-icon><CircleCheck /></el-icon>
+            </div>
+            <div class="stat-info">
+              <div class="stat-value">{{ statistics.active }}</div>
+              <div class="stat-label">
+                {{ $t('tenant.statistics.activeTenants') }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-content">
+            <div class="stat-icon suspended">
+              <el-icon><VideoPause /></el-icon>
+            </div>
+            <div class="stat-info">
+              <div class="stat-value">{{ statistics.suspended }}</div>
+              <div class="stat-label">
+                {{ $t('tenant.statistics.suspendedTenants') }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-content">
+            <div class="stat-icon users">
+              <el-icon><User /></el-icon>
+            </div>
+            <div class="stat-info">
+              <div class="stat-value">{{ statistics.totalUsers }}</div>
+              <div class="stat-label">
+                {{ $t('tenant.statistics.totalUsers') }}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- 搜索和筛选 -->
-    <div class="search-section">
-      <el-card>
-        <div class="search-form">
-          <el-row :gutter="16">
-            <el-col :span="8">
-              <el-input
-                v-model="searchParams.search"
-                :placeholder="$t('tenant.search.placeholder')"
-                :prefix-icon="Search"
-                clearable
-                @keyup.enter="handleSearch"
-                @clear="handleSearch"
-              />
-            </el-col>
-            <el-col :span="6">
-              <el-select
-                v-model="searchParams.status"
-                :placeholder="$t('tenant.search.statusFilter')"
-                clearable
-                @change="handleSearch"
-              >
-                <el-option :label="$t('tenant.search.allStatus')" value="" />
-                <el-option
-                  v-for="status in statusOptions"
-                  :key="status.value"
-                  :label="status.label"
-                  :value="status.value"
-                />
-              </el-select>
-            </el-col>
-            <el-col :span="4">
-              <el-button type="primary" :icon="Search" @click="handleSearch">
-                搜索
-              </el-button>
-            </el-col>
-          </el-row>
+    <!-- 表格 -->
+    <component :is="Grid">
+      <!-- 工具栏操作按钮 -->
+      <template #toolbar-actions>
+        <el-button type="primary" :icon="Plus" @click="handleCreate">
+          {{ $t('tenant.actions.create') }}
+        </el-button>
+        <!-- <el-button type="info" @click="testApiCall"> 测试 API </el-button> -->
+      </template>
+
+      <!-- 租户名称列 -->
+      <template #tenant_name_default="{ row }">
+        <div class="tenant-name-cell">
+          <div class="tenant-name font-medium">{{ row.tenant_name }}</div>
+          <div class="tenant-code text-sm text-gray-500">
+            {{ row.tenant_code }}
+          </div>
         </div>
-      </el-card>
-    </div>
+      </template>
 
-    <!-- 统计卡片 -->
-    <div class="statistics-section">
-      <el-row :gutter="16">
-        <el-col :span="6">
-          <el-card class="stat-card">
-            <div class="stat-content">
-              <div class="stat-icon total">
-                <el-icon><OfficeBuilding /></el-icon>
-              </div>
-              <div class="stat-info">
-                <div class="stat-value">{{ totalTenants }}</div>
-                <div class="stat-label">
-                  {{ $t('tenant.statistics.totalTenants') }}
-                </div>
-              </div>
-            </div>
-          </el-card>
-        </el-col>
-        <el-col :span="6">
-          <el-card class="stat-card">
-            <div class="stat-content">
-              <div class="stat-icon active">
-                <el-icon><CircleCheck /></el-icon>
-              </div>
-              <div class="stat-info">
-                <div class="stat-value">{{ activeTenants.length }}</div>
-                <div class="stat-label">
-                  {{ $t('tenant.statistics.activeTenants') }}
-                </div>
-              </div>
-            </div>
-          </el-card>
-        </el-col>
-        <el-col :span="6">
-          <el-card class="stat-card">
-            <div class="stat-content">
-              <div class="stat-icon suspended">
-                <el-icon><VideoPause /></el-icon>
-              </div>
-              <div class="stat-info">
-                <div class="stat-value">{{ suspendedTenants.length }}</div>
-                <div class="stat-label">
-                  {{ $t('tenant.statistics.suspendedTenants') }}
-                </div>
-              </div>
-            </div>
-          </el-card>
-        </el-col>
-        <el-col :span="6">
-          <el-card class="stat-card">
-            <div class="stat-content">
-              <div class="stat-icon users">
-                <el-icon><User /></el-icon>
-              </div>
-              <div class="stat-info">
-                <div class="stat-value">{{ totalUsers }}</div>
-                <div class="stat-label">
-                  {{ $t('tenant.statistics.totalUsers') }}
-                </div>
-              </div>
-            </div>
-          </el-card>
-        </el-col>
-      </el-row>
-    </div>
+      <!-- 状态列 -->
+      <template #status_default="{ row }">
+        <el-tag :type="getStatusTagType(row.status)">
+          {{ $t(`tenant.status.${row.status}`) }}
+        </el-tag>
+      </template>
 
-    <!-- 租户列表 -->
-    <div class="table-section">
-      <el-card>
-        <el-table
-          v-loading="listLoading"
-          :data="tenantList"
-          stripe
-          @sort-change="handleSortChange"
-        >
-          <el-table-column
-            prop="tenant_name"
-            :label="$t('tenant.fields.tenantName')"
-            min-width="150"
-            sortable="custom"
-          >
-            <template #default="{ row }">
-              <div class="tenant-name-cell">
-                <div class="tenant-name">{{ row.tenant_name }}</div>
-                <div class="tenant-code">{{ row.tenant_code }}</div>
-              </div>
-            </template>
-          </el-table-column>
-
-          <el-table-column
-            prop="status"
-            :label="$t('tenant.fields.status')"
-            width="120"
-            align="center"
-          >
-            <template #default="{ row }">
-              <el-tag :type="getStatusTagType(row.status)" size="small">
-                {{ $t(`tenant.status.${row.status}`) }}
-              </el-tag>
-            </template>
-          </el-table-column>
-
-          <el-table-column
-            prop="current_users"
-            :label="$t('tenant.fields.currentUsers')"
-            width="120"
-            align="center"
-          >
-            <template #default="{ row }">
-              <span>{{ row.current_users }} / {{ row.max_users }}</span>
-            </template>
-          </el-table-column>
-
-          <el-table-column
-            prop="created_at"
-            :label="$t('tenant.fields.createdAt')"
-            width="180"
-            sortable="custom"
-          >
-            <template #default="{ row }">
-              {{ formatDateTime(row.created_at) }}
-            </template>
-          </el-table-column>
-
-          <el-table-column
-            :label="$t('common.actions')"
-            width="200"
-            align="center"
-            fixed="right"
-          >
-            <template #default="{ row }">
-              <el-button
-                type="primary"
-                size="small"
-                text
-                @click="handleView(row)"
-              >
-                {{ $t('tenant.actions.view') }}
-              </el-button>
-              <el-button
-                type="primary"
-                size="small"
-                text
-                @click="handleEdit(row)"
-              >
-                {{ $t('tenant.actions.edit') }}
-              </el-button>
-              <el-dropdown
-                @command="
-                  (
-                    command:
-                      | 'activate'
-                      | 'delete'
-                      | 'quotas'
-                      | 'settings'
-                      | 'suspend',
-                  ) => handleDropdownCommand(command, row)
-                "
-              >
-                <el-button type="primary" size="small" text>
-                  更多<el-icon class="el-icon--right"><ArrowDown /></el-icon>
-                </el-button>
-                <template #dropdown>
-                  <el-dropdown-menu>
-                    <el-dropdown-item command="settings">
-                      {{ $t('tenant.actions.settings') }}
-                    </el-dropdown-item>
-                    <el-dropdown-item command="quotas">
-                      {{ $t('tenant.actions.quotas') }}
-                    </el-dropdown-item>
-                    <el-dropdown-item
-                      v-if="row.status === 'active'"
-                      command="suspend"
-                    >
-                      {{ $t('tenant.actions.suspend') }}
-                    </el-dropdown-item>
-                    <el-dropdown-item
-                      v-if="row.status !== 'active'"
-                      command="activate"
-                    >
-                      {{ $t('tenant.actions.activate') }}
-                    </el-dropdown-item>
-                    <el-dropdown-item command="delete" divided>
-                      {{ $t('tenant.actions.delete') }}
-                    </el-dropdown-item>
-                  </el-dropdown-menu>
-                </template>
-              </el-dropdown>
-            </template>
-          </el-table-column>
-        </el-table>
-
-        <!-- 分页 -->
-        <div class="pagination-wrapper">
-          <el-pagination
-            v-model:current-page="pagination.current"
-            v-model:page-size="pagination.pageSize"
-            :total="pagination.total"
-            :page-sizes="[10, 20, 50, 100]"
-            layout="total, sizes, prev, pager, next, jumper"
-            @size-change="handleSizeChange"
-            @current-change="handleCurrentChange"
-          />
+      <!-- 操作列 -->
+      <template #action_default="{ row }">
+        <div class="flex items-center space-x-2">
+          <el-button size="small" type="primary" @click="handleView(row)">
+            查看
+          </el-button>
+          <el-button size="small" type="success" @click="handleEdit(row)">
+            编辑
+          </el-button>
+          <el-button size="small" type="danger" @click="handleDelete(row)">
+            删除
+          </el-button>
         </div>
-      </el-card>
-    </div>
+      </template>
+    </component>
   </div>
 </template>
 
 <style scoped>
 .tenant-list-page {
-  padding: 16px;
-}
-
-.page-header {
-  margin-bottom: 16px;
-}
-
-.header-content {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.page-title {
-  margin: 0;
-  font-size: 24px;
-  font-weight: 600;
-  color: var(--el-text-color-primary);
-}
-
-.header-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.search-section {
-  margin-bottom: 16px;
-}
-
-.search-form {
-  padding: 8px 0;
+  @apply p-4;
 }
 
 .statistics-section {
-  margin-bottom: 16px;
+  @apply mb-6;
 }
 
 .stat-card {
-  height: 100px;
+  @apply rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md;
 }
 
 .stat-content {
-  display: flex;
-  align-items: center;
-  height: 100%;
-}
-
-.stat-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  margin-right: 16px;
-  font-size: 24px;
-  color: white;
-  border-radius: 8px;
-}
-
-.stat-icon.total {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-.stat-icon.active {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-}
-
-.stat-icon.suspended {
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-}
-
-.stat-icon.users {
-  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  @apply flex items-center justify-between;
 }
 
 .stat-info {
-  flex: 1;
+  @apply flex-1;
 }
 
 .stat-value {
-  font-size: 28px;
-  font-weight: 600;
-  line-height: 1;
-  color: var(--el-text-color-primary);
+  @apply mb-1 text-2xl font-bold text-gray-900;
 }
 
 .stat-label {
-  margin-top: 4px;
-  font-size: 14px;
-  color: var(--el-text-color-regular);
+  @apply text-sm text-gray-500;
 }
 
-.table-section {
-  margin-bottom: 16px;
+.stat-icon {
+  @apply flex h-12 w-12 items-center justify-center rounded-lg text-xl text-white;
+}
+
+.stat-icon.total {
+  @apply bg-blue-500;
+}
+
+.stat-icon.active {
+  @apply bg-green-500;
+}
+
+.stat-icon.suspended {
+  @apply bg-orange-500;
+}
+
+.stat-icon.users {
+  @apply bg-purple-500;
 }
 
 .tenant-name-cell {
-  display: flex;
-  flex-direction: column;
+  @apply space-y-1;
 }
 
 .tenant-name {
-  font-weight: 500;
-  color: var(--el-text-color-primary);
+  @apply text-gray-900;
 }
 
 .tenant-code {
-  margin-top: 2px;
-  font-size: 12px;
-  color: var(--el-text-color-regular);
+  @apply text-xs text-gray-500;
 }
 
-.pagination-wrapper {
-  display: flex;
-  justify-content: center;
-  margin-top: 16px;
+/* Dark mode support */
+.dark .stat-card {
+  @apply border-gray-700 bg-gray-800;
+}
+
+.dark .stat-value {
+  @apply text-gray-100;
+}
+
+.dark .stat-label {
+  @apply text-gray-400;
+}
+
+.dark .tenant-name {
+  @apply text-gray-100;
+}
+
+.dark .tenant-code {
+  @apply text-gray-400;
 }
 </style>
