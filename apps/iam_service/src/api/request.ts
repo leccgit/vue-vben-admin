@@ -77,7 +77,7 @@ function createRequestClient(baseURL: string, options?: RequestClientOptions) {
 
       // 如果是原始响应模式，直接返回
       if (config?.responseReturn === 'raw') {
-        return response;
+        return responseData;
       }
       //
       // // 检查 HTTP 状态码

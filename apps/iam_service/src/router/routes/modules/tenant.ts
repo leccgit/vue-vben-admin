@@ -32,7 +32,7 @@ const routes: RouteRecordRaw[] = [
         meta: {
           hideInMenu: true,
           icon: 'lucide:eye',
-          title: $t('tenant.detail'),
+          title: $t('tenant.detail.title'),
         },
       },
       {
@@ -52,7 +52,7 @@ const routes: RouteRecordRaw[] = [
         meta: {
           hideInMenu: true,
           icon: 'lucide:edit',
-          title: $t('tenant.edit'),
+          title: $t('tenant.edit.title'),
         },
       },
       {

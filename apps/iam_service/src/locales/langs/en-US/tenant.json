@@ -5,8 +5,6 @@
   "create": "Create Tenant",
   "edit": "Edit Tenant",
   "delete": "Delete Tenant",
-  "settings": "Tenant Settings",
-  "quotas": "Quota Management",
   "status": {
     "active": "Active",
     "inactive": "Inactive",

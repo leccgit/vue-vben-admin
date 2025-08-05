@@ -6,7 +6,8 @@ import type { UpdateTenantRequest } from '#/api/core/tenant';
 import { onMounted, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
-import { ArrowLeft } from '@element-plus/icons-vue';
+import { ArrowLeft, Check } from '@element-plus/icons-vue';
+import { ElMessage } from 'element-plus';
 import { storeToRefs } from 'pinia';
 
 import { $t } from '#/locales';
@@ -28,6 +29,21 @@ const formData = reactive<Omit<UpdateTenantRequest, 'tenant_id'>>({
   description: '',
   max_users: 100,
 });
+
+// 获取状态标签类型
+function getStatusType(status: string) {
+  const typeMap: Record<
+    string,
+    'danger' | 'info' | 'primary' | 'success' | 'warning'
+  > = {
+    active: 'success',
+    inactive: 'info',
+    pending: 'primary',
+    suspended: 'warning',
+    deleted: 'danger',
+  };
+  return typeMap[status] || 'info';
+}
 
 // 表单验证规则
 const formRules: FormRules = {
@@ -103,6 +119,9 @@ async function handleSubmit() {
     // 更新租户
     await tenantStore.updateTenant(submitData);
 
+    // 显示成功消息
+    ElMessage.success($t('tenant.updateSuccess'));
+
     // 跳转到租户详情页
     router.push(`/tenant/detail/${currentTenant.value.tenant_id}`);
   } catch (error) {
@@ -128,127 +147,271 @@ onMounted(async () => {
           <el-button :icon="ArrowLeft" @click="handleBack">
             {{ $t('common.back') }}
           </el-button>
-          <h1 class="page-title">{{ $t('tenant.edit') }}</h1>
+          <div class="page-title">
+            <h1>{{ $t('tenant.edit.title') }}</h1>
+            <p v-if="currentTenant" class="page-subtitle">
+              {{ currentTenant.tenant_name }}
+            </p>
+          </div>
+        </div>
+        <div class="header-actions">
+          <el-button @click="handleReset">
+            {{ $t('common.reset') }}
+          </el-button>
+          <el-button
+            type="primary"
+            :loading="operationLoading"
+            @click="handleSubmit"
+          >
+            <el-icon><Check /></el-icon>
+            {{ $t('common.save') }}
+          </el-button>
         </div>
       </div>
     </div>
 
-    <!-- 加载状态 -->
-    <div v-if="detailLoading" class="loading-container">
-      <el-skeleton :rows="8" animated />
-    </div>
+    <!-- 内容区域 -->
+    <div class="page-content">
+      <!-- 加载状态 -->
+      <div v-if="detailLoading" class="loading-container">
+        <el-skeleton :rows="8" animated />
+      </div>
 
-    <!-- 编辑表单 -->
-    <div v-else-if="currentTenant" class="form-container">
-      <el-card>
-        <el-form
-          ref="formRef"
-          :model="formData"
-          :rules="formRules"
-          label-width="120px"
-          @submit.prevent="handleSubmit"
-        >
-          <el-row :gutter="24">
-            <el-col :span="12">
+      <!-- 编辑表单 -->
+      <div v-else-if="currentTenant" class="form-container">
+        <div class="form-card">
+          <div class="card-header">
+            <h3>{{ $t('tenant.edit.basicInfo') }}</h3>
+            <p class="card-description">
+              {{ $t('tenant.edit.basicInfoDesc') }}
+            </p>
+          </div>
+          <div class="card-content">
+            <el-form
+              ref="formRef"
+              :model="formData"
+              :rules="formRules"
+              label-width="120px"
+              class="form-grid"
+              @submit.prevent="handleSubmit"
+            >
+              <div class="form-row">
+                <el-form-item
+                  :label="$t('tenant.fields.tenantName')"
+                  prop="tenant_name"
+                  class="form-item"
+                >
+                  <el-input
+                    v-model="formData.tenant_name"
+                    :placeholder="$t('tenant.form.tenantNamePlaceholder')"
+                    size="large"
+                    clearable
+                  />
+                </el-form-item>
+
+                <el-form-item
+                  :label="$t('tenant.fields.tenantCode')"
+                  class="form-item"
+                >
+                  <el-input
+                    :value="currentTenant.tenant_code"
+                    size="large"
+                    disabled
+                    readonly
+                  />
+                  <div class="form-tip">
+                    {{ $t('tenant.form.tenantCodeTip') }}
+                  </div>
+                </el-form-item>
+              </div>
+
               <el-form-item
-                :label="$t('tenant.fields.tenantName')"
-                prop="tenant_name"
+                :label="$t('tenant.fields.description')"
+                prop="description"
+                class="form-item full-width"
               >
                 <el-input
-                  v-model="formData.tenant_name"
-                  :placeholder="$t('tenant.form.tenantNamePlaceholder')"
-                  clearable
+                  v-model="formData.description"
+                  type="textarea"
+                  :rows="4"
+                  size="large"
+                  :placeholder="$t('tenant.form.descriptionPlaceholder')"
                 />
               </el-form-item>
-            </el-col>
-            <el-col :span="12">
-              <el-form-item :label="$t('tenant.fields.tenantCode')">
-                <el-input
-                  :value="currentTenant.tenant_code"
-                  disabled
-                  readonly
-                />
-                <div class="form-tip">租户编码创建后不可修改</div>
-              </el-form-item>
-            </el-col>
-          </el-row>
 
-          <el-form-item
-            :label="$t('tenant.fields.description')"
-            prop="description"
-          >
-            <el-input
-              v-model="formData.description"
-              type="textarea"
-              :rows="3"
-              :placeholder="$t('tenant.form.descriptionPlaceholder')"
-            />
-          </el-form-item>
+              <div class="form-row">
+                <el-form-item
+                  :label="$t('tenant.fields.maxUsers')"
+                  prop="max_users"
+                  class="form-item"
+                >
+                  <el-input-number
+                    v-model="formData.max_users"
+                    :min="currentTenant.current_users"
+                    :max="100000"
+                    :step="1"
+                    size="large"
+                    style="width: 100%"
+                  />
+                  <div class="form-tip">
+                    {{
+                      $t('tenant.form.maxUsersTip', {
+                        current: currentTenant.current_users,
+                      })
+                    }}
+                  </div>
+                </el-form-item>
 
-          <el-form-item :label="$t('tenant.fields.maxUsers')" prop="max_users">
-            <el-input-number
-              v-model="formData.max_users"
-              :min="currentTenant.current_users"
-              :max="100000"
-              :step="1"
-              style="width: 200px"
-            />
-            <div class="form-tip">
-              当前用户数：{{
-                currentTenant.current_users
-              }}，最大用户数不能小于当前用户数
-            </div>
-          </el-form-item>
+                <el-form-item
+                  :label="$t('tenant.fields.status')"
+                  class="form-item"
+                >
+                  <el-tag
+                    :type="getStatusType(currentTenant.status)"
+                    size="large"
+                  >
+                    {{ $t(`tenant.status.${currentTenant.status}`) }}
+                  </el-tag>
+                  <div class="form-tip">{{ $t('tenant.form.statusTip') }}</div>
+                </el-form-item>
+              </div>
+            </el-form>
+          </div>
+        </div>
+      </div>
 
-          <el-form-item>
-            <el-button
-              type="primary"
-              :loading="operationLoading"
-              @click="handleSubmit"
-            >
-              {{ $t('common.save') }}
-            </el-button>
-            <el-button @click="handleReset">
-              {{ $t('common.reset') }}
-            </el-button>
-            <el-button @click="handleBack">
-              {{ $t('common.cancel') }}
-            </el-button>
-          </el-form-item>
-        </el-form>
-      </el-card>
-    </div>
-
-    <!-- 未找到租户 -->
-    <div v-else class="not-found">
-      <el-empty :description="$t('tenant.notFound')" :image-size="200">
-        <el-button type="primary" @click="handleBack">
-          {{ $t('common.back') }}
-        </el-button>
-      </el-empty>
+      <!-- 未找到租户 -->
+      <div v-else class="empty-state">
+        <el-empty :description="$t('tenant.detail.notFound')" :image-size="200">
+          <el-button type="primary" @click="handleBack">
+            {{ $t('common.back') }}
+          </el-button>
+        </el-empty>
+      </div>
     </div>
   </div>
 </template>
 
-<style scoped>
+<style scoped lang="css">
 .tenant-edit-page {
-  padding: 16px;
+  min-height: 100vh;
+  background-color: #f9fafb;
 }
 
 .page-header {
-  margin-bottom: 16px;
+  padding: 1rem 1.5rem;
+  background-color: white;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .header-content {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  max-width: 80rem;
+  margin: 0 auto;
 }
 
 .header-left {
   display: flex;
-  gap: 16px;
+  gap: 1rem;
   align-items: center;
+}
+
+.page-title h1 {
+  margin-bottom: 0.25rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.page-subtitle {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.header-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.page-content {
+  max-width: 64rem;
+  padding: 1.5rem;
+  margin: 0 auto;
+}
+
+.form-card {
+  overflow: hidden;
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 10%);
+}
+
+.card-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.card-header h3 {
+  margin-bottom: 0.25rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.card-description {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.card-content {
+  padding: 1.5rem;
+}
+
+.form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .form-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .form-item.full-width {
+    grid-column: span 2;
+  }
+}
+
+.form-tip {
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.loading-container {
+  padding: 1.5rem;
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 10%);
+}
+
+.empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 0;
 }
 
 .page-title {
@@ -258,18 +421,8 @@ onMounted(async () => {
   color: var(--el-text-color-primary);
 }
 
-.loading-container {
-  padding: 24px;
-}
-
 .form-container {
   max-width: 800px;
-}
-
-.form-tip {
-  margin-top: 4px;
-  font-size: 12px;
-  color: var(--el-text-color-regular);
 }
 
 .not-found {

@@ -5,9 +5,8 @@ import { useRoute, useRouter } from 'vue-router';
 import {
   ArrowDown,
   ArrowLeft,
-  Avatar,
   Edit,
-  Key,
+  PieChart,
   User,
   UserFilled,
 } from '@element-plus/icons-vue';
@@ -26,22 +25,18 @@ const { detailLoading } = tenantStore;
 const { currentTenant } = storeToRefs(tenantStore);
 
 // 获取状态标签类型
-function getStatusTagType(status: string) {
-  const typeMap: Record<string, string> = {
+function getStatusType(status: string) {
+  const typeMap: Record<
+    string,
+    'danger' | 'info' | 'primary' | 'success' | 'warning'
+  > = {
     active: 'success',
     inactive: 'info',
-    pending: 'warning',
-    suspended: 'danger',
-    deleted: 'info',
+    pending: 'primary',
+    suspended: 'warning',
+    deleted: 'danger',
   };
   return typeMap[status] || 'info';
-}
-
-// 获取使用率颜色
-function getUsageColor(ratio: number) {
-  if (ratio < 0.7) return '#67c23a';
-  if (ratio < 0.9) return '#e6a23c';
-  return '#f56c6c';
 }
 
 // 事件处理
@@ -65,14 +60,6 @@ async function handleDropdownCommand(command: string) {
     }
     case 'delete': {
       await handleDelete();
-      break;
-    }
-    case 'quotas': {
-      router.push(`/tenant/quotas/${currentTenant.value.tenant_id}`);
-      break;
-    }
-    case 'settings': {
-      router.push(`/tenant/settings/${currentTenant.value.tenant_id}`);
       break;
     }
     case 'suspend': {
@@ -157,7 +144,12 @@ onMounted(async () => {
           <el-button :icon="ArrowLeft" @click="handleBack">
             {{ $t('common.back') }}
           </el-button>
-          <h1 class="page-title">{{ $t('tenant.detail') }}</h1>
+          <div class="page-title">
+            <h1>{{ $t('tenant.detail.title') }}</h1>
+            <p v-if="currentTenant" class="page-subtitle">
+              {{ currentTenant.tenant_name }}
+            </p>
+          </div>
         </div>
         <div class="header-actions">
           <el-button type="primary" :icon="Edit" @click="handleEdit">
@@ -165,30 +157,24 @@ onMounted(async () => {
           </el-button>
           <el-dropdown @command="handleDropdownCommand">
             <el-button>
-              {{ $t('common.more')
-              }}<el-icon class="el-icon--right"><ArrowDown /></el-icon>
+              {{ $t('common.more') }}
+              <el-icon class="el-icon--right"><ArrowDown /></el-icon>
             </el-button>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item command="settings">
-                  {{ $t('tenant.actions.settings') }}
-                </el-dropdown-item>
-                <el-dropdown-item command="quotas">
-                  {{ $t('tenant.actions.quotas') }}
-                </el-dropdown-item>
                 <el-dropdown-item
-                  v-if="currentTenant?.status === 'active'"
-                  command="suspend"
-                >
-                  {{ $t('tenant.actions.suspend') }}
-                </el-dropdown-item>
-                <el-dropdown-item
-                  v-if="currentTenant?.status !== 'active'"
                   command="activate"
+                  v-if="currentTenant?.status === 'suspended'"
                 >
                   {{ $t('tenant.actions.activate') }}
                 </el-dropdown-item>
-                <el-dropdown-item command="delete" divided>
+                <el-dropdown-item
+                  command="suspend"
+                  v-if="currentTenant?.status === 'active'"
+                >
+                  {{ $t('tenant.actions.suspend') }}
+                </el-dropdown-item>
+                <el-dropdown-item divided command="delete">
                   {{ $t('tenant.actions.delete') }}
                 </el-dropdown-item>
               </el-dropdown-menu>
@@ -198,354 +184,308 @@ onMounted(async () => {
       </div>
     </div>
 
-    <!-- 加载状态 -->
-    <div v-if="detailLoading" class="loading-container">
-      <el-skeleton :rows="8" animated />
-    </div>
-
-    <!-- 租户详情内容 -->
-    <div v-else-if="currentTenant" class="detail-content">
-      <!-- 基本信息卡片 -->
-      <el-card class="info-card">
-        <template #header>
+    <!-- 内容区域 -->
+    <div v-loading="detailLoading" class="page-content">
+      <div v-if="currentTenant" class="content-grid">
+        <!-- 基本信息卡片 -->
+        <div class="info-card">
           <div class="card-header">
-            <span class="card-title">{{ $t('common.basicInfo') }}</span>
-            <el-tag :type="getStatusTagType(currentTenant.status)" size="large">
-              {{ $t(`tenant.status.${currentTenant.status}`) }}
-            </el-tag>
+            <h3>{{ $t('tenant.detail.basicInfo') }}</h3>
           </div>
-        </template>
-
-        <el-row :gutter="24">
-          <el-col :span="12">
-            <div class="info-item">
-              <label class="info-label">{{
-                $t('tenant.fields.tenantName')
-              }}</label>
-              <div class="info-value">{{ currentTenant.tenant_name }}</div>
-            </div>
-          </el-col>
-          <el-col :span="12">
-            <div class="info-item">
-              <label class="info-label">{{
-                $t('tenant.fields.tenantCode')
-              }}</label>
-              <div class="info-value">{{ currentTenant.tenant_code }}</div>
-            </div>
-          </el-col>
-          <el-col :span="12">
-            <div class="info-item">
-              <label class="info-label">{{
-                $t('tenant.fields.tenantId')
-              }}</label>
-              <div class="info-value">{{ currentTenant.tenant_id }}</div>
-            </div>
-          </el-col>
-          <el-col :span="12">
-            <div class="info-item">
-              <label class="info-label">{{
-                $t('tenant.fields.maxUsers')
-              }}</label>
-              <div class="info-value">{{ currentTenant.max_users }}</div>
-            </div>
-          </el-col>
-          <el-col :span="24">
-            <div class="info-item">
-              <label class="info-label">{{
-                $t('tenant.fields.description')
-              }}</label>
-              <div class="info-value">
-                {{ currentTenant.description || '-' }}
+          <div class="card-content">
+            <div class="info-grid">
+              <div class="info-item">
+                <label>{{ $t('tenant.fields.tenantName') }}</label>
+                <div class="info-value">{{ currentTenant.tenant_name }}</div>
               </div>
-            </div>
-          </el-col>
-          <el-col :span="12">
-            <div class="info-item">
-              <label class="info-label">{{
-                $t('tenant.fields.createdAt')
-              }}</label>
-              <div class="info-value">
-                {{ formatDateTime(currentTenant.created_at) }}
+              <div class="info-item">
+                <label>{{ $t('tenant.fields.tenantCode') }}</label>
+                <div class="info-value">{{ currentTenant.tenant_code }}</div>
               </div>
-            </div>
-          </el-col>
-          <el-col :span="12">
-            <div class="info-item">
-              <label class="info-label">{{
-                $t('tenant.fields.updatedAt')
-              }}</label>
-              <div class="info-value">
-                {{ formatDateTime(currentTenant.updated_at) }}
-              </div>
-            </div>
-          </el-col>
-        </el-row>
-      </el-card>
-
-      <!-- 统计信息卡片 -->
-      <el-card class="statistics-card">
-        <template #header>
-          <span class="card-title">{{ $t('tenant.statistics.overview') }}</span>
-        </template>
-
-        <el-row :gutter="16">
-          <el-col :span="6">
-            <div class="stat-item">
-              <div class="stat-icon users">
-                <el-icon><User /></el-icon>
-              </div>
-              <div class="stat-content">
-                <div class="stat-value">
-                  {{ currentTenant.statistics.user_count }}
+              <div class="info-item">
+                <label>{{ $t('tenant.fields.status') }}</label>
+                <div class="info-value">
+                  <el-tag :type="getStatusType(currentTenant.status)">
+                    {{ $t(`tenant.status.${currentTenant.status}`) }}
+                  </el-tag>
                 </div>
-                <div class="stat-label">
-                  {{ $t('tenant.fields.userCount') }}
+              </div>
+              <div class="info-item full-width">
+                <label>{{ $t('tenant.fields.description') }}</label>
+                <div class="info-value">
+                  {{ currentTenant.description || $t('common.none') }}
                 </div>
               </div>
             </div>
-          </el-col>
-          <el-col :span="6">
-            <div class="stat-item">
-              <div class="stat-icon active-users">
-                <el-icon><UserFilled /></el-icon>
-              </div>
-              <div class="stat-content">
-                <div class="stat-value">
-                  {{ currentTenant.statistics.active_user_count }}
-                </div>
-                <div class="stat-label">
-                  {{ $t('tenant.fields.activeUserCount') }}
-                </div>
-              </div>
-            </div>
-          </el-col>
-          <el-col :span="6">
-            <div class="stat-item">
-              <div class="stat-icon roles">
-                <el-icon><Avatar /></el-icon>
-              </div>
-              <div class="stat-content">
-                <div class="stat-value">
-                  {{ currentTenant.statistics.role_count }}
-                </div>
-                <div class="stat-label">
-                  {{ $t('tenant.fields.roleCount') }}
-                </div>
-              </div>
-            </div>
-          </el-col>
-          <el-col :span="6">
-            <div class="stat-item">
-              <div class="stat-icon permissions">
-                <el-icon><Key /></el-icon>
-              </div>
-              <div class="stat-content">
-                <div class="stat-value">
-                  {{ currentTenant.statistics.permission_count }}
-                </div>
-                <div class="stat-label">
-                  {{ $t('tenant.fields.permissionCount') }}
-                </div>
-              </div>
-            </div>
-          </el-col>
-        </el-row>
-      </el-card>
-
-      <!-- 用户使用情况 -->
-      <el-card class="usage-card">
-        <template #header>
-          <span class="card-title">{{ $t('tenant.statistics.usage') }}</span>
-        </template>
-
-        <div class="usage-progress">
-          <div class="usage-info">
-            <span class="usage-label">{{
-              $t('tenant.fields.currentUsers')
-            }}</span>
-            <span class="usage-value">
-              {{ currentTenant.current_users }} / {{ currentTenant.max_users }}
-            </span>
           </div>
-          <el-progress
-            :percentage="
-              Math.round(
-                (currentTenant.current_users / currentTenant.max_users) * 100,
-              )
-            "
-            :color="
-              getUsageColor(
-                currentTenant.current_users / currentTenant.max_users,
-              )
-            "
-            :stroke-width="8"
-          />
         </div>
-      </el-card>
-    </div>
 
-    <!-- 未找到租户 -->
-    <div v-else class="not-found">
-      <el-empty :description="$t('tenant.notFound')" :image-size="200">
-        <el-button type="primary" @click="handleBack">
-          {{ $t('common.back') }}
-        </el-button>
-      </el-empty>
+        <!-- 用户统计卡片 -->
+        <div class="stats-card">
+          <div class="card-header">
+            <h3>{{ $t('tenant.detail.userStats') }}</h3>
+          </div>
+          <div class="card-content">
+            <div class="stats-grid">
+              <div class="stat-item">
+                <div class="stat-icon current">
+                  <el-icon><User /></el-icon>
+                </div>
+                <div class="stat-info">
+                  <div class="stat-value">
+                    {{ currentTenant.current_users }}
+                  </div>
+                  <div class="stat-label">
+                    {{ $t('tenant.fields.currentUsers') }}
+                  </div>
+                </div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-icon max">
+                  <el-icon><UserFilled /></el-icon>
+                </div>
+                <div class="stat-info">
+                  <div class="stat-value">{{ currentTenant.max_users }}</div>
+                  <div class="stat-label">
+                    {{ $t('tenant.fields.maxUsers') }}
+                  </div>
+                </div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-icon usage">
+                  <el-icon><PieChart /></el-icon>
+                </div>
+                <div class="stat-info">
+                  <div class="stat-value">
+                    {{
+                      Math.round(
+                        (currentTenant.current_users /
+                          currentTenant.max_users) *
+                          100,
+                      )
+                    }}%
+                  </div>
+                  <div class="stat-label">
+                    {{ $t('tenant.detail.usageRate') }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 时间信息卡片 -->
+        <div class="time-card">
+          <div class="card-header">
+            <h3>{{ $t('tenant.detail.timeInfo') }}</h3>
+          </div>
+          <div class="card-content">
+            <div class="info-grid">
+              <div class="info-item">
+                <label>{{ $t('tenant.fields.createdAt') }}</label>
+                <div class="info-value">
+                  {{ formatDateTime(currentTenant.created_at) }}
+                </div>
+              </div>
+              <div class="info-item">
+                <label>{{ $t('tenant.fields.updatedAt') }}</label>
+                <div class="info-value">
+                  {{ formatDateTime(currentTenant.updated_at) }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 空状态 -->
+      <div v-else class="empty-state">
+        <el-empty :description="$t('tenant.detail.notFound')" />
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
 .tenant-detail-page {
-  padding: 16px;
+  min-height: 100vh;
+  background-color: #f9fafb;
 }
 
 .page-header {
-  margin-bottom: 16px;
+  padding: 1rem 1.5rem;
+  background-color: white;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .header-content {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  max-width: 80rem;
+  margin: 0 auto;
 }
 
 .header-left {
   display: flex;
-  gap: 16px;
+  gap: 1rem;
   align-items: center;
 }
 
-.page-title {
-  margin: 0;
-  font-size: 24px;
-  font-weight: 600;
-  color: var(--el-text-color-primary);
+.page-title h1 {
+  margin-bottom: 0.25rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.page-subtitle {
+  font-size: 0.875rem;
+  color: #6b7280;
 }
 
 .header-actions {
   display: flex;
-  gap: 8px;
+  gap: 0.75rem;
+  align-items: center;
 }
 
-.loading-container {
-  padding: 24px;
+.page-content {
+  max-width: 80rem;
+  padding: 1.5rem;
+  margin: 0 auto;
 }
 
-.detail-content {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+.content-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+  .content-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .stats-card {
+    grid-column: span 2;
+  }
+}
+
+.info-card,
+.stats-card,
+.time-card {
+  overflow: hidden;
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 10%);
 }
 
 .card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  padding: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
 }
 
-.card-title {
-  font-size: 16px;
+.card-header h3 {
+  font-size: 1.125rem;
   font-weight: 600;
-  color: var(--el-text-color-primary);
+  color: #111827;
 }
 
-.info-item {
-  margin-bottom: 16px;
+.card-content {
+  padding: 1.5rem;
 }
 
-.info-label {
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .info-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .info-item.full-width {
+    grid-column: span 2;
+  }
+}
+
+.info-item label {
   display: block;
-  margin-bottom: 4px;
-  font-size: 14px;
-  color: var(--el-text-color-regular);
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
 }
 
 .info-value {
-  font-size: 14px;
-  color: var(--el-text-color-primary);
-  word-break: break-all;
+  font-size: 1rem;
+  color: #111827;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 .stat-item {
   display: flex;
+  gap: 1rem;
   align-items: center;
-  padding: 16px;
-  background: var(--el-bg-color-page);
-  border-radius: 8px;
 }
 
 .stat-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  margin-right: 12px;
-  font-size: 20px;
+  width: 3rem;
+  height: 3rem;
+  font-size: 1.25rem;
   color: white;
-  border-radius: 8px;
+  border-radius: 0.5rem;
 }
 
-.stat-icon.users {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+.stat-icon.current {
+  background-color: #3b82f6;
 }
 
-.stat-icon.active-users {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+.stat-icon.max {
+  background-color: #10b981;
 }
 
-.stat-icon.roles {
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+.stat-icon.usage {
+  background-color: #8b5cf6;
 }
 
-.stat-icon.permissions {
-  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-}
-
-.stat-content {
+.stat-info {
   flex: 1;
 }
 
 .stat-value {
-  font-size: 20px;
-  font-weight: 600;
-  line-height: 1;
-  color: var(--el-text-color-primary);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
 }
 
 .stat-label {
-  margin-top: 4px;
-  font-size: 12px;
-  color: var(--el-text-color-regular);
+  font-size: 0.875rem;
+  color: #6b7280;
 }
 
-.usage-progress {
-  padding: 8px 0;
-}
-
-.usage-info {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
-}
-
-.usage-label {
-  font-size: 14px;
-  color: var(--el-text-color-regular);
-}
-
-.usage-value {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--el-text-color-primary);
-}
-
-.not-found {
+.empty-state {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 400px;
+  padding: 3rem 0;
 }
 </style>

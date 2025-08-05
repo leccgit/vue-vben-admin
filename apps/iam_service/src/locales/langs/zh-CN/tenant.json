@@ -1,12 +1,21 @@
 {
   "title": "租户管理",
   "list": "租户列表",
-  "detail": "租户详情",
+  "detail": {
+    "title": "租户详情",
+    "basicInfo": "基本信息",
+    "userStats": "用户统计",
+    "timeInfo": "时间信息",
+    "usageRate": "使用率",
+    "notFound": "租户不存在"
+  },
   "create": "创建租户",
-  "edit": "编辑租户",
+  "edit": {
+    "title": "编辑租户",
+    "basicInfo": "基本信息",
+    "basicInfoDesc": "修改租户的基本信息和配置"
+  },
   "delete": "删除租户",
-  "settings": "租户配置",
-  "quotas": "配额管理",
   "status": {
     "active": "活跃",
     "inactive": "非活跃",
@@ -41,7 +50,10 @@
     "adminUsernamePlaceholder": "请输入管理员用户名",
     "adminEmailPlaceholder": "请输入管理员邮箱",
     "adminPasswordPlaceholder": "请输入管理员密码",
-    "adminUserSettings": "管理员用户设置"
+    "adminUserSettings": "管理员用户设置",
+    "tenantCodeTip": "租户编码创建后不可修改",
+    "maxUsersTip": "当前用户数：{current}，最大用户数不能小于当前用户数",
+    "statusTip": "状态变更请使用详情页面的操作按钮"
   },
   "search": {
     "keyword": "关键词",

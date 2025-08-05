@@ -27,6 +27,7 @@ export interface TenantStatistics {
 }
 
 export interface TenantDetailInfo extends TenantBasicInfo {
+  data: TenantDetailInfo;
   statistics: TenantStatistics;
 }
 
@@ -153,9 +154,7 @@ export async function listTenantsApi(params: ListTenantsRequest = {}) {
   return requestClient.post<ListTenantsApiResponse>(
     '/v1/tenants/list',
     requestData,
-    {
-      responseReturn: 'raw',
-    },
+    { responseReturn: 'raw' },
   );
 }
 
@@ -164,9 +163,10 @@ export async function listTenantsApi(params: ListTenantsRequest = {}) {
  */
 export async function getTenantDetailApi(tenantId: string) {
   const requestData = await generateRequestData({ tenant_id: tenantId });
-  return requestClient.post<{ tenant: TenantDetailInfo }>(
+  return requestClient.post<TenantDetailInfo>(
     '/v1/tenants/detail',
     requestData,
+    { responseReturn: 'raw' },
   );
 }
 
@@ -178,6 +178,7 @@ export async function updateTenantApi(params: UpdateTenantRequest) {
   return requestClient.post<{ tenant: TenantDetailInfo }>(
     '/v1/tenants/update',
     requestData,
+    { responseReturn: 'raw' },
   );
 }
 
@@ -197,6 +198,7 @@ export async function deleteTenantApi(
   return requestClient.post<{ backup_info?: any; deleted_tenant_id: string }>(
     '/v1/tenants/delete',
     requestData,
+    { responseReturn: 'raw' },
   );
 }
 
