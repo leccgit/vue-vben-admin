@@ -81,6 +81,12 @@ const ElRadioGroup = defineAsyncComponent(() =>
     import('element-plus/es/components/radio-group/style/css'),
   ]).then(([res]) => res.ElRadioGroup),
 );
+const ElSelect = defineAsyncComponent(() =>
+  Promise.all([
+    import('element-plus/es/components/select/index'),
+    import('element-plus/es/components/select/style/css'),
+  ]).then(([res]) => res.ElSelect),
+);
 const ElSelectV2 = defineAsyncComponent(() =>
   Promise.all([
     import('element-plus/es/components/select-v2/index'),
@@ -358,7 +364,7 @@ async function initComponentAdapter() {
       );
     },
     Select: (props, { attrs, slots }) => {
-      return h(ElSelectV2, { ...props, attrs }, slots);
+      return h(ElSelect, { ...props, attrs }, slots);
     },
     Space: ElSpace,
     Switch: ElSwitch,
@@ -425,6 +431,7 @@ async function initComponentAdapter() {
     ElFormItem,
     ElInput,
     ElInputNumber,
+    ElSelect,
     ElSkeleton,
   };
 

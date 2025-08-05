@@ -9,6 +9,7 @@ import {
   User,
   VideoPause,
 } from '@element-plus/icons-vue';
+import { ElButton, ElTag } from 'element-plus';
 import { storeToRefs } from 'pinia';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
@@ -307,23 +308,23 @@ const statistics = computed(() => {
 
       <!-- 状态列 -->
       <template #status_default="{ row }">
-        <el-tag :type="getStatusTagType(row.status)">
+        <ElTag :type="getStatusTagType(row.status)">
           {{ $t(`tenant.status.${row.status}`) }}
-        </el-tag>
+        </ElTag>
       </template>
 
       <!-- 操作列 -->
       <template #action_default="{ row }">
         <div class="flex items-center space-x-2">
-          <el-button size="small" type="primary" @click="handleView(row)">
+          <ElButton size="small" type="primary" @click="handleView(row)">
             查看
-          </el-button>
-          <el-button size="small" type="success" @click="handleEdit(row)">
+          </ElButton>
+          <ElButton size="small" type="success" @click="handleEdit(row)">
             编辑
-          </el-button>
-          <el-button size="small" type="danger" @click="handleDelete(row)">
+          </ElButton>
+          <ElButton size="small" type="danger" @click="handleDelete(row)">
             删除
-          </el-button>
+          </ElButton>
         </div>
       </template>
     </component>
