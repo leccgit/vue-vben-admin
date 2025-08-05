@@ -290,9 +290,9 @@ const statistics = computed(() => {
     <component :is="Grid">
       <!-- 工具栏操作按钮 -->
       <template #toolbar-actions>
-        <el-button type="primary" :icon="Plus" @click="handleCreate">
+        <ElButton type="primary" :icon="Plus" @click="handleCreate">
           {{ $t('tenant.actions.create') }}
-        </el-button>
+        </ElButton>
         <!-- <el-button type="info" @click="testApiCall"> 测试 API </el-button> -->
       </template>
 

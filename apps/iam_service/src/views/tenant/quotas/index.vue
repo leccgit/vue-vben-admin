@@ -2,6 +2,7 @@
 import { useRoute, useRouter } from 'vue-router';
 
 import { ArrowLeft } from '@element-plus/icons-vue';
+import { ElButton, ElCard, ElEmpty } from 'element-plus';
 
 import { $t } from '#/locales';
 
@@ -24,9 +25,9 @@ function handleBack() {
     <div class="page-header">
       <div class="header-content">
         <div class="header-left">
-          <el-button :icon="ArrowLeft" @click="handleBack">
+          <ElButton :icon="ArrowLeft" @click="handleBack">
             {{ $t('common.back') }}
-          </el-button>
+          </ElButton>
           <h1 class="page-title">{{ $t('tenant.quotas') }}</h1>
         </div>
       </div>
@@ -34,15 +35,15 @@ function handleBack() {
 
     <!-- 配额内容 -->
     <div class="quotas-content">
-      <el-card>
+      <ElCard>
         <div class="coming-soon">
-          <el-empty description="租户配额管理功能开发中..." :image-size="200">
-            <el-button type="primary" @click="handleBack">
+          <ElEmpty description="租户配额管理功能开发中..." :image-size="200">
+            <ElButton type="primary" @click="handleBack">
               {{ $t('common.back') }}
-            </el-button>
-          </el-empty>
+            </ElButton>
+          </ElEmpty>
         </div>
-      </el-card>
+      </ElCard>
     </div>
   </div>
 </template>
